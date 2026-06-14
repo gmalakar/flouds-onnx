@@ -121,3 +121,35 @@ class TestExporterBridge:
         assert captured.get("optimize") is True
         assert captured.get("model_name") == "org/model"
         assert captured.get("model_for") == "fe"
+
+    def test_passes_hf_token_as_huggingface_hub_token(self, tmp_path):
+        """flouds-model-exporter 1.x expects huggingface_hub_token."""
+        model_dir = str(tmp_path / "models" / "fe" / "mymodel")
+        os.makedirs(model_dir, exist_ok=True)
+        captured = {}
+
+        def fake_export(**kw):
+            captured.update(kw)
+            return model_dir
+
+        mock_pipeline = MagicMock()
+        mock_pipeline.export = fake_export
+
+        with patch.dict(
+            sys.modules,
+            {
+                "model_exporter": MagicMock(),
+                "model_exporter.export": MagicMock(),
+                "model_exporter.export.pipeline": mock_pipeline,
+            },
+        ):
+            ExporterBridge.export(
+                "org/private-model",
+                model_dir,
+                "fe",
+                task="feature-extraction",
+                hf_token="hf_test",
+            )
+
+        assert captured.get("huggingface_hub_token") == "hf_test"
+        assert "hf_token" not in captured

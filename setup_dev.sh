@@ -27,7 +27,7 @@ pip install --upgrade pip --quiet
 # 4. Install deps
 echo "Installing dependencies..."
 pip install -r "$ROOT/requirements-dev.txt" --quiet
-pip install -e "$ROOT[export,seq2seq]" --quiet
+pip install -e "$ROOT[export,seq2seq,server]" --quiet
 
 # 5. Install pre-commit hooks
 echo "Installing pre-commit hooks..."

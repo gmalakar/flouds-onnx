@@ -71,6 +71,8 @@ coverage.xml
 *.log
 logs/
 *.tmp
+tmp/
+tmp_*/
 *.bak
 *.old
 *.orig
@@ -78,6 +80,7 @@ logs/
 _patch.py
 
 # ML models and exported artifacts
+.flouds/
 onnx/
 checkpoints/
 *.onnx

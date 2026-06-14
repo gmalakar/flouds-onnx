@@ -39,9 +39,18 @@ def cmd_pull(args: argparse.Namespace) -> int:
             task=args.task or None,
             force=args.force,
             optimize=args.optimize,
+            optimization_level=args.optimization_level,
+            opset_version=args.opset_version,
+            device=args.device,
+            framework=args.framework or None,
+            library=args.library or None,
+            normalize_embeddings=args.normalize_embeddings,
             trust_remote_code=args.trust_remote_code,
             use_external_data_format=args.use_external_data_format,
+            use_subprocess=args.use_subprocess,
             use_fallback_if_failed=args.use_fallback_if_failed,
+            merge=args.merge,
+            skip_validator=args.skip_validator,
             hf_token=args.hf_token or None,
         )
         print(f"OK  {manifest.model_name}  [{manifest.model_for}]  pulled_at={manifest.pulled_at}")
@@ -120,10 +129,19 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--task", default="", help="Optimum export task")
     p.add_argument("--optimize", action="store_true", default=True)
     p.add_argument("--no-optimize", dest="optimize", action="store_false")
+    p.add_argument("--optimization-level", type=int, default=99)
+    p.add_argument("--opset-version", type=int, default=None)
+    p.add_argument("--device", default="cpu")
+    p.add_argument("--framework", default="")
+    p.add_argument("--library", default="")
+    p.add_argument("--normalize-embeddings", action="store_true")
     p.add_argument("--force", action="store_true")
     p.add_argument("--trust-remote-code", action="store_true")
     p.add_argument("--use-external-data-format", action="store_true")
+    p.add_argument("--use-subprocess", action="store_true")
     p.add_argument("--use-fallback-if-failed", action="store_true")
+    p.add_argument("--merge", action="store_true")
+    p.add_argument("--skip-validator", action="store_true")
     p.add_argument("--hf-token", default="", help="HuggingFace API token")
     p.set_defaults(func=cmd_pull)
 

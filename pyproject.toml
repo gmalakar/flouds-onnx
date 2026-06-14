@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "floudsonnx"
 version = "0.1.0"
-description = "Ollama-style ONNX model store and runtime — pull, cache, and serve ORT sessions"
+description = "Ollama-style ONNX model store and runtime - pull, cache, and serve ORT sessions"
 readme = { file = "README.md", content-type = "text/markdown" }
 keywords = ["onnx", "onnxruntime", "model-serving", "huggingface", "inference", "flouds"]
 requires-python = ">=3.11,<3.13"
@@ -30,12 +30,11 @@ dependencies = [
     "onnxruntime>=1.20.1",
     "transformers>=4.44.0,<4.58.0",
     "pydantic>=2.0",
-    "pydantic-settings>=2.0",
     "numpy>=1.26.4,<1.27",
 ]
 
 [project.optional-dependencies]
-export = ["flouds-model-exporter>=0.2.0"]
+export = ["flouds-model-exporter>=1.0.1"]
 seq2seq = ["optimum[onnxruntime]>=1.22.0"]
 server = ["fastapi>=0.110.0", "uvicorn[standard]>=0.29.0"]
 dev = [
@@ -83,6 +82,7 @@ filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::FutureWarning",
     # Suppress torch TracerWarning (subclass of UserWarning) from transformers/torch
+    "ignore:Converting a tensor to a Python boolean might cause the trace to be incorrect.*",
     "ignore:.*registered as constants.*",
     "ignore:.*torch.tensor results.*",
     "ignore::UserWarning:torch",

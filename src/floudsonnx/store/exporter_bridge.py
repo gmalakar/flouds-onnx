@@ -8,7 +8,7 @@
 """
 floudsonnx.store.exporter_bridge
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Thin lazy wrapper over flouds-model-exporter 0.2.0.
+Thin lazy wrapper over flouds-model-exporter.
 
 Mirrors the CLI invocation:
     flouds-export export --model-for fe \\
@@ -60,7 +60,7 @@ class ExporterBridge:
         **kwargs: Any,
     ) -> str:
         """
-        Export *model_name* using flouds-model-exporter 0.2.0.
+        Export *model_name* using flouds-model-exporter.
 
         Sets ONNX_PATH = <home_dir> (root above models/<model_for>/<folder>)
         before calling export(), restores it in a finally block.
@@ -103,7 +103,7 @@ class ExporterBridge:
         if library is not None:
             call_kwargs["library"] = library
         if hf_token is not None:
-            call_kwargs["hf_token"] = hf_token
+            call_kwargs["huggingface_hub_token"] = hf_token
 
         call_kwargs.update(kwargs)
 

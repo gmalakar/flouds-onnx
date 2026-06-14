@@ -70,5 +70,4 @@ jobs:
       - name: Integration tests
         run: pytest tests/integration/ -v --tb=short -m integration
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          FLOUDSONNX_EXPORT_HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HUGGINGFACE_HUB_TOKEN: ${{ secrets.HUGGINGFACE_HUB_TOKEN }}

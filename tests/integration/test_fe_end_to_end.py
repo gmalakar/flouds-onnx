@@ -25,7 +25,7 @@ def fe_client(tmp_path_factory):
     from floudsonnx import FloudsOnnxClient, FloudsOnnxSettings
 
     home = tmp_path_factory.mktemp("flouds_integration")
-    return FloudsOnnxClient(FloudsOnnxSettings(home_dir=home, export_optimize=False))
+    return FloudsOnnxClient(FloudsOnnxSettings(home_dir=home))
 
 
 def test_pull_creates_manifest(fe_client):

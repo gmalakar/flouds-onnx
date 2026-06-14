@@ -1,182 +1,484 @@
 # floudsonnx
 
-Ollama-style ONNX model store and runtime — pull, cache, and load ORT sessions.
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 
-Behaves like Ollama but for ONNX models: pull models from HuggingFace, cache them
-locally under `~/.flouds/`, load them into `onnxruntime.InferenceSession` or
-`ORTModelForSeq2SeqLM`, and serve them to any downstream service with a single call.
+`floudsonnx` is a small ONNX model store and runtime for Python. It can pull
+Hugging Face models into a local ONNX store, cache runtime sessions, and load
+models as either `onnxruntime.InferenceSession` or Optimum
+`ORTModelForSeq2SeqLM` objects.
 
-## Install
+The package is designed for applications that want an Ollama-like local model
+store, but for ONNX artifacts.
+
+## Important: Hugging Face Models Must Be Converted To ONNX
+
+`floudsonnx` runs ONNX models. Hugging Face models must be exported to ONNX
+before they can be loaded as runtime sessions.
+
+Install the `export` extra when you want `floudsonnx` to convert Hugging Face
+models automatically:
 
 ```bash
-pip install floudsonnx                  # core — load pre-exported models
-pip install floudsonnx[export]          # + auto-export via flouds-model-exporter
-pip install floudsonnx[seq2seq]         # + ORTModelForSeq2SeqLM (s2s / llm)
-pip install floudsonnx[server]          # + optional FastAPI HTTP server
-pip install floudsonnx[all]             # everything
+pip install "floudsonnx[export]"
 ```
 
-> **Note:** Do not install `sentence-transformers`. Always pass
-> `library="transformers"` when pulling `fe` / `sc` / `ranker` models.
+That extra installs `flouds-model-exporter`, which is required for converting
+Hugging Face models to ONNX. Without it, `floudsonnx` can still load models
+that already exist in the local ONNX store, but it cannot pull/export new
+Hugging Face models.
 
-## Quick start
+For private or gated Hugging Face models, provide a token with the standard
+Hugging Face Hub variable:
+
+```bash
+export HUGGINGFACE_HUB_TOKEN="hf_xxx_your_token"
+```
+
+`HUGGINGFACE_HUB_TOKEN` is read by the Hugging Face/exporter stack during
+pull/export.
+
+You can also pass a token per call:
 
 ```python
-from floudsonnx import create_model
-import numpy as np
+from floudsonnx import pull
 
-# Pull (auto-export if missing) + load session
-model = create_model(
-    "sentence-transformers/all-MiniLM-L6-v2",
-    model_for="fe",
-    library="transformers",
-    normalize_embeddings=True,
-)
-
-# Tokenize
-enc = model.tokenizer(["Hello world"], return_tensors="np", padding=True, truncation=True)
-
-# Build input feed from session's expected inputs (handles token_type_ids automatically)
-inputs = {i.name for i in model.session.get_inputs()}
-feed = {n: enc[n].astype(np.int64) for n in inputs if n in enc}
-
-# Run
-outputs = model.run(None, feed)
-print(outputs[0].shape)  # (1, seq_len, 384)
+pull("org/private-model", model_for="fe", hf_token="hf_xxx_your_token")
 ```
 
-## Model types
+Never commit real Hugging Face tokens to source control.
 
-| `model_for` | Task | Session type | Example model |
-|---|---|---|---|
-| `fe` | feature-extraction | `ort.InferenceSession` | `sentence-transformers/all-MiniLM-L6-v2` |
-| `sc` | text-classification | `ort.InferenceSession` | `distilbert-base-uncased-finetuned-sst-2-english` |
-| `ranker` | sequence-classification | `ort.InferenceSession` | `cross-encoder/ms-marco-MiniLM-L-12-v2` |
-| `s2s` | seq2seq-lm | `ORTModelForSeq2SeqLM` | `google/flan-t5-small` |
-| `llm` | text-generation-with-past | `ORTModelForSeq2SeqLM` | `TinyLlama/TinyLlama-1.1B-Chat-v1.0` |
+## Features
 
-## CLI
+- Local model store under `~/.flouds/models` by default.
+- Auto-export from Hugging Face through the optional `flouds-model-exporter`
+  integration.
+- Runtime loading for feature extraction, sequence classification, ranker,
+  seq2seq, and LLM-style model categories.
+- Thread-safe session caching for ONNX Runtime and seq2seq models.
+- Tokenizer loading and caching.
+- Python API, CLI, and optional FastAPI server.
+- Manifest files for locally stored models.
+
+## Installation
+
+`floudsonnx` supports Python `3.11` and `3.12`.
 
 ```bash
-# Pull a model (auto-exports if not on disk)
-floudsonnx pull sentence-transformers/all-MiniLM-L6-v2 \
-    --for fe --task feature-extraction --library transformers --normalize-embeddings
-
-# List locally stored models
-floudsonnx list
-
-# Inspect manifest
-floudsonnx info sentence-transformers/all-MiniLM-L6-v2
-
-# Remove from store
-floudsonnx remove sentence-transformers/all-MiniLM-L6-v2
-
-# Hot-reload session from disk
-floudsonnx reload sentence-transformers/all-MiniLM-L6-v2
-
-# Session cache stats
-floudsonnx stats
-
-# Start optional HTTP server
-floudsonnx serve --host 0.0.0.0 --port 19720
+pip install floudsonnx
 ```
 
-## Python API
+The core install loads models that are already exported to ONNX. Install extras
+for export, seq2seq, or server support:
+
+```bash
+pip install "floudsonnx[export]"          # auto-export via flouds-model-exporter
+pip install "floudsonnx[seq2seq]"         # Optimum ORTModelForSeq2SeqLM support
+pip install "floudsonnx[server]"          # FastAPI + Uvicorn HTTP server
+pip install "floudsonnx[all]"             # export + seq2seq + server
+```
+
+Core dependencies:
+
+- `onnxruntime`
+- `transformers`
+- `pydantic`
+- `numpy`
+
+Optional extras:
+
+- `export`: `flouds-model-exporter>=1.0.1`
+- `seq2seq`: `optimum[onnxruntime]`
+- `server`: `fastapi`, `uvicorn[standard]`
+
+For feature-extraction, classification, and ranker exports, prefer
+`library="transformers"` to avoid `sentence-transformers` auto-detection in the
+exporter.
+
+### Store Location And `ONNX_PATH`
+
+`floudsonnx` stores models under `~/.flouds/models` by default. Override the
+store root with `FloudsOnnxSettings`:
 
 ```python
 from floudsonnx import FloudsOnnxClient, FloudsOnnxSettings
 
-# Custom settings
-client = FloudsOnnxClient(FloudsOnnxSettings(
+client = FloudsOnnxClient(
+    FloudsOnnxSettings(onnx_path="/path/to/onnx/models")
+)
+```
+
+When `floudsonnx` calls `flouds-model-exporter`, it sets the raw `ONNX_PATH`
+environment variable internally so exported files land in the selected
+`floudsonnx` store.
+
+If you run `flouds-model-exporter` directly, use its native `ONNX_PATH`
+variable:
+
+```bash
+export ONNX_PATH="/path/to/onnx/models"
+flouds-export export --model-name t5-small --model-for s2s --task seq2seq-lm
+```
+
+## Quickstart
+
+This example pulls a feature-extraction model, loads it, tokenizes input text,
+builds the ONNX Runtime input feed from the session's actual inputs, and runs
+inference.
+
+```python
+import numpy as np
+
+from floudsonnx import create_model
+
+model = create_model(
+    "sentence-transformers/all-MiniLM-L6-v2",
+    model_for="fe",
+    task="feature-extraction",
+    library="transformers",
+    normalize_embeddings=True,
+)
+
+encoded = model.tokenizer(
+    ["Hello world"],
+    return_tensors="np",
+    padding=True,
+    truncation=True,
+    max_length=64,
+)
+
+session_inputs = {item.name for item in model.session.get_inputs()}
+feed = {name: encoded[name].astype(np.int64) for name in session_inputs if name in encoded}
+
+# Some exported encoder models require token_type_ids even when the tokenizer
+# does not return them.
+for missing_name in session_inputs - set(feed):
+    feed[missing_name] = np.zeros_like(next(iter(feed.values())))
+
+outputs = model.run(None, feed)
+print(outputs[0].shape)
+```
+
+The `create_model()` helper pulls/exports the model if needed, then loads it.
+Use `load_model()` when the model is already present on disk and you do not
+want auto-export.
+
+## Seq2Seq Example
+
+Seq2seq loading requires the `seq2seq` extra. Pulling from Hugging Face also
+requires the `export` extra.
+
+```python
+from floudsonnx import create_model
+
+model = create_model("t5-small", model_for="s2s", task="seq2seq-lm")
+
+encoded = model.tokenizer(
+    ["summarize: The quick brown fox jumps over the lazy dog."],
+    return_tensors="pt",
+    truncation=True,
+    max_length=64,
+)
+
+tokens = model.seq2seq_model.generate(
+    input_ids=encoded["input_ids"],
+    max_new_tokens=32,
+)
+
+print(model.tokenizer.decode(tokens[0], skip_special_tokens=True))
+```
+
+## Model Types
+
+| `model_for` | Default export task | Runtime strategy |
+|---|---|---|
+| `fe` | `feature-extraction` | `onnxruntime.InferenceSession` |
+| `sc` | `text-classification` | `onnxruntime.InferenceSession` |
+| `ranker` | `text-classification` | `onnxruntime.InferenceSession` |
+| `s2s` | `seq2seq-lm` | `ORTModelForSeq2SeqLM` |
+| `llm` | `text-generation-with-past` | `onnxruntime.InferenceSession` by default, or `ORTModelForSeq2SeqLM` when configured with `use_seq2seqlm=True` |
+
+## Python API
+
+Top-level convenience functions:
+
+```python
+from floudsonnx import (
+    create_model,
+    list_models,
+    load_model,
+    pull,
+    remove_model,
+)
+```
+
+Available top-level functions:
+
+| Function | Description |
+|---|---|
+| `create_model(model_name, model_for="fe", **kwargs)` | Pull/export if needed, then load the model. |
+| `load_model(model_name, model_for="fe")` | Load an existing local model without auto-export. |
+| `pull(model_name, model_for="fe", **kwargs)` | Export/store the model and return its manifest. |
+| `list_models()` | Return local `ModelManifest` objects. |
+| `remove_model(model_name, model_for="fe")` | Delete the local model and evict cached sessions. |
+
+For explicit settings and cache control, use `FloudsOnnxClient`:
+
+```python
+from floudsonnx import FloudsOnnxClient, FloudsOnnxSettings
+
+settings = FloudsOnnxSettings(
     home_dir="/data/flouds",
     session_provider="CPUExecutionProvider",
-))
+)
+client = FloudsOnnxClient(settings)
 
-# pull — export only (no session load)
-manifest = client.pull("BAAI/bge-base-en-v1.5", model_for="fe",
-                        library="transformers", normalize_embeddings=True)
+manifest = client.pull(
+    "BAAI/bge-base-en-v1.5",
+    model_for="fe",
+    task="feature-extraction",
+    library="transformers",
+    normalize_embeddings=True,
+)
 
-# create_model — pull + load (idempotent)
-model = client.create_model("BAAI/bge-base-en-v1.5", model_for="fe")
-
-# load_model — load only (must already be on disk)
 model = client.load_model("BAAI/bge-base-en-v1.5", model_for="fe")
+print(model.session_strategy)
 
-# reload — hot-reload from disk without restarting
-model = client.reload("BAAI/bge-base-en-v1.5", model_for="fe")
-
-# unload — evict from RAM, keep files on disk
 client.unload("BAAI/bge-base-en-v1.5", model_for="fe")
-
-# remove — delete from disk + evict from RAM
 client.remove("BAAI/bge-base-en-v1.5", model_for="fe")
-
-# list
-for m in client.list():
-    print(m.model_name, m.model_for, m.session_strategy)
-
-# S2S / LLM
-s2s = client.create_model("google/flan-t5-small", model_for="s2s")
-out = s2s.seq2seq_model.generate(input_ids=enc["input_ids"], max_new_tokens=64)
 ```
 
-## Environment variables (`FLOUDSONNX_` prefix)
+`FloudsOnnxClient` methods:
 
-| Variable | Default | Description |
+- `pull(...)`
+- `list()`
+- `remove(model_name, model_for="fe")`
+- `create_model(...)`
+- `load_model(model_name, model_for="fe")`
+- `reload(model_name, model_for="fe")`
+- `unload(model_name, model_for="fe")`
+- `is_loaded(model_name, model_for="fe")`
+- `cache_stats()`
+
+## LoadedModel
+
+`create_model()` and `load_model()` return a `LoadedModel` with:
+
+- `model_name`
+- `model_for`
+- `model_dir`
+- `config`
+- `tokenizer`
+- `session_strategy`
+- `session` for `onnxruntime.InferenceSession` models
+- `seq2seq_model` for `ORTModelForSeq2SeqLM` models
+- `is_seq2seq`
+- `run(output_names, input_feed, run_options=None)`
+
+For encoder/classification/ranker models, call `model.run(...)`.
+
+For seq2seq models, call `model.seq2seq_model.generate(...)`.
+
+## CLI
+
+```bash
+floudsonnx --help
+```
+
+Commands:
+
+```bash
+# Pull/export a model to the local store
+floudsonnx pull sentence-transformers/all-MiniLM-L6-v2 --for fe --task feature-extraction
+
+# Disable ONNX optimization during pull
+floudsonnx pull t5-small --for s2s --task seq2seq-lm --no-optimize
+
+# List locally stored models
+floudsonnx list
+
+# Show manifest JSON
+floudsonnx info sentence-transformers/all-MiniLM-L6-v2 --for fe
+
+# Remove from local store
+floudsonnx remove sentence-transformers/all-MiniLM-L6-v2 --for fe
+
+# Evict and reload from disk
+floudsonnx reload sentence-transformers/all-MiniLM-L6-v2 --for fe
+
+# Show session cache stats
+floudsonnx stats
+
+# Start the optional HTTP server
+floudsonnx serve --host 127.0.0.1 --port 19720
+```
+
+Current `pull` CLI options:
+
+- `--for`
+- `--task`
+- `--optimize`
+- `--no-optimize`
+- `--optimization-level`
+- `--opset-version`
+- `--device`
+- `--framework`
+- `--library`
+- `--normalize-embeddings`
+- `--force`
+- `--trust-remote-code`
+- `--use-external-data-format`
+- `--use-subprocess`
+- `--use-fallback-if-failed`
+- `--merge`
+- `--skip-validator`
+- `--hf-token`
+
+Example:
+
+```bash
+floudsonnx pull sentence-transformers/all-MiniLM-L6-v2 \
+  --for fe \
+  --task feature-extraction \
+  --library transformers \
+  --normalize-embeddings
+```
+
+## Optional HTTP Server
+
+Install the server extra:
+
+```bash
+pip install "floudsonnx[server]"
+```
+
+Start the server:
+
+```bash
+floudsonnx serve --host 127.0.0.1 --port 19720
+```
+
+Routes:
+
+| Method | Path | Description |
 |---|---|---|
-| `HOME_DIR` | `~/.flouds` | Model store root |
-| `ONNX_PATH` | `<home>/models` | Override models directory |
-| `SESSION_PROVIDER` | `CPUExecutionProvider` | ORT execution provider |
-| `ENCODER_CACHE_MAX` | `5` | Max cached encoder sessions |
-| `DECODER_CACHE_MAX` | `5` | Max cached decoder sessions |
-| `SEQ2SEQ_CACHE_MAX` | `3` | Max cached seq2seq models |
-| `EXPORT_OPTIMIZE` | `false` | Enable ONNX graph optimization |
-| `EXPORT_OPSET` | *(auto)* | Force specific ONNX opset |
-| `EXPORT_DEVICE` | `cpu` | Export device |
-| `EXPORT_LIBRARY` | *(auto)* | Force exporter library (e.g. `transformers`) |
-| `EXPORT_NORMALIZE_EMBEDDINGS` | `false` | Normalize embeddings on export |
-| `EXPORT_USE_SUBPROCESS` | `false` | Run export in subprocess |
-| `EXPORT_USE_FALLBACK_IF_FAILED` | `false` | Try legacy fallback on export failure |
-| `EXPORT_MERGE` | `false` | Merge encoder/decoder into single file |
-| `EXPORT_HF_TOKEN` | *(none)* | HuggingFace API token |
-| `SERVER_HOST` | `127.0.0.1` | HTTP server host |
-| `SERVER_PORT` | `19720` | HTTP server port |
+| `GET` | `/health` | Health check. |
+| `GET` | `/api/v1/models` | List local model manifests. |
+| `GET` | `/api/v1/models/{name}?model_for=fe` | Get one manifest. |
+| `POST` | `/api/v1/models/pull` | Pull/export a model. |
+| `POST` | `/api/v1/models/load` | Load a local model into cache. |
+| `POST` | `/api/v1/models/reload` | Evict and reload a model. |
+| `POST` | `/api/v1/models/unload` | Evict a model from memory. |
+| `DELETE` | `/api/v1/models/{name}?model_for=fe` | Remove a model from disk. |
+| `GET` | `/api/v1/stats` | Return cache statistics. |
 
-## Local store layout
+Pull request body:
 
+```json
+{
+  "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+  "model_for": "fe",
+  "task": "feature-extraction",
+  "force": false,
+  "optimize": false,
+  "trust_remote_code": false,
+  "use_external_data_format": false,
+  "use_fallback_if_failed": false,
+  "hf_token": null
+}
 ```
+
+Load/reload/unload request body:
+
+```json
+{
+  "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+  "model_for": "fe"
+}
+```
+
+## Configuration
+
+Configure `floudsonnx` with `FloudsOnnxSettings` when creating a client:
+
+```python
+from floudsonnx import FloudsOnnxClient, FloudsOnnxSettings
+
+client = FloudsOnnxClient(
+    FloudsOnnxSettings(
+        home_dir="/data/flouds",
+        onnx_path="/data/flouds/models",
+        session_provider="CPUExecutionProvider",
+        encoder_cache_max=5,
+        decoder_cache_max=5,
+        seq2seq_cache_max=3,
+    )
+)
+```
+
+Additional variables:
+
+| Environment variable | Used by | Description |
+|---|---|---|
+| `HUGGINGFACE_HUB_TOKEN` | Hugging Face Hub / `flouds-model-exporter` | Standard token variable for private or gated Hugging Face models. |
+| `ONNX_PATH` | `flouds-model-exporter` | Native exporter output root. `floudsonnx` sets this internally during export; configure the `floudsonnx` store with `FloudsOnnxSettings`. |
+
+## Local Store Layout
+
+Default layout:
+
+```text
 ~/.flouds/
-└── models/
-    ├── fe/
-    │   └── all-MiniLM-L6-v2/
-    │       ├── model.onnx
-    │       ├── model_optimized.onnx
-    │       ├── tokenizer.json
-    │       └── manifest.json
-    ├── s2s/
-    ├── sc/
-    ├── ranker/
-    └── llm/
+`-- models/
+    |-- fe/
+    |   `-- all-MiniLM-L6-v2/
+    |       |-- model.onnx
+    |       |-- model_optimized.onnx
+    |       |-- tokenizer.json
+    |       `-- manifest.json
+    |-- s2s/
+    |-- sc/
+    |-- ranker/
+    `-- llm/
 ```
+
+Each model directory contains a `manifest.json` with the model name, model
+type, export options, selected runtime strategy, discovered ONNX files, and
+model config.
 
 ## Development
 
 ```bash
 pip install -r requirements-dev.txt
-pip install -e ".[export,seq2seq]"
+pip install -e ".[export,seq2seq,server]"
 pre-commit install
-pytest tests/unit/ -v
+pytest tests/unit -v
 ```
 
-## Manual tests
+Useful checks:
 
 ```bash
-python manual_test.py --normalize-embeddings          # fe model
-python test_all_models.py --type fe s2s ranker        # multiple types
-python test_all_models.py --type llm                  # LLM (~2GB download)
-python test_all_models.py --no-export                 # load existing only
+python tools/check_dependency_sync.py
+black --check src tests tools
+isort --check-only src tests tools
+flake8 src tests tools
+mypy src/floudsonnx
+pyright src/floudsonnx
+python -m build
+twine check dist/*
 ```
+
+Integration tests download and export real models:
+
+```bash
+pytest tests/integration -m integration -v
+```
+
+## Release
+
+Releases are tag-driven through GitHub Actions. See
+[`docs/RELEASE_PROCESS.md`](docs/RELEASE_PROCESS.md).
 
 ## License
 
-Apache-2.0 © 2026 Goutam Malakar
+Apache-2.0. See [`LICENSE`](LICENSE).

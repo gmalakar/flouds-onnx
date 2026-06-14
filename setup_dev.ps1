@@ -30,7 +30,7 @@ python -m pip install --upgrade pip --quiet
 # 4. Install deps
 Write-Host "Installing dependencies..." -ForegroundColor Yellow
 pip install -r "$Root\requirements-dev.txt" --quiet
-pip install -e "$Root[export,seq2seq]" --quiet
+pip install -e "$Root[export,seq2seq,server]" --quiet
 
 # 5. Install pre-commit hooks
 Write-Host "Installing pre-commit hooks..." -ForegroundColor Yellow
