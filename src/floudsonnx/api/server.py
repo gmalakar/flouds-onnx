@@ -16,7 +16,7 @@ def create_app() -> Any:
         raise ServerNotInstalledError() from exc
     from floudsonnx.api.routers import health, models
 
-    app = FastAPI(title="floudsonnx", description="ONNX model store and runtime REST API", version="0.1.0")
+    app = FastAPI(title="floudsonnx", description="ONNX model store and runtime REST API", version="1.0.0")
     app.include_router(health.router)
     app.include_router(models.router, prefix="/api/v1")
     return app

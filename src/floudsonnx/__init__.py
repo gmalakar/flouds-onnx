@@ -33,7 +33,7 @@ from floudsonnx.runtime.loader import LoadedModel
 from floudsonnx.runtime.strategy import SessionStrategy
 from floudsonnx.store.manifest import ModelManifest
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 __all__ = [
     # Primary API
     "create_model",

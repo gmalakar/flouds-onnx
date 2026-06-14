@@ -6,7 +6,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
 ## [0.1.0] - 2026-06-11
-
+## [1.0.0] - 2026-06-14
 ### Added
 
 - `FloudsOnnxClient`, the primary Python API facade.
