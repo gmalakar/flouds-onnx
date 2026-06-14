@@ -37,7 +37,6 @@ def run(args: argparse.Namespace) -> int:  # noqa: C901
 
     settings = FloudsOnnxSettings(
         home_dir=args.home,
-        export_optimize=args.optimize,
         session_provider="CPUExecutionProvider",
     )
     client = FloudsOnnxClient(settings)
@@ -65,6 +64,7 @@ def run(args: argparse.Namespace) -> int:  # noqa: C901
             model_name,
             model_for=model_for,
             task=args.task or None,
+            optimize=args.optimize,
             library=library,
             normalize_embeddings=args.normalize_embeddings,
         )
@@ -86,7 +86,14 @@ def run(args: argparse.Namespace) -> int:  # noqa: C901
     # ── 3. CREATE MODEL ───────────────────────────────────────────────────────
     section("3. create_model()")
     t0 = time.perf_counter()
-    model = client.create_model(model_name, model_for=model_for)
+    model = client.create_model(
+        model_name,
+        model_for=model_for,
+        task=args.task or None,
+        optimize=args.optimize,
+        library=library,
+        normalize_embeddings=args.normalize_embeddings,
+    )
     elapsed = time.perf_counter() - t0
     print(f"  {model}")
     print(f"  elapsed      : {elapsed:.3f}s")
@@ -140,7 +147,14 @@ def run(args: argparse.Namespace) -> int:  # noqa: C901
     # ── 5. CACHE HIT ─────────────────────────────────────────────────────────
     section("5. cache hit (second create_model call)")
     t0 = time.perf_counter()
-    model2 = client.create_model(model_name, model_for=model_for)
+    model2 = client.create_model(
+        model_name,
+        model_for=model_for,
+        task=args.task or None,
+        optimize=args.optimize,
+        library=library,
+        normalize_embeddings=args.normalize_embeddings,
+    )
     elapsed = time.perf_counter() - t0
     same = (model2.session is model.session) if not model.is_seq2seq else (model2.seq2seq_model is model.seq2seq_model)
     print(f"  elapsed      : {elapsed:.4f}s  (should be <0.01s)")

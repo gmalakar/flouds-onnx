@@ -7,4 +7,4 @@
 -r requirements-prod.txt
 
 # ONNX export via flouds-model-exporter
-flouds-model-exporter>=0.2.0
+flouds-model-exporter>=1.0.1

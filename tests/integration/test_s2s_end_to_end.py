@@ -13,7 +13,10 @@ Run with:  pytest -m integration
 """
 import pytest
 
-pytestmark = pytest.mark.integration
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.filterwarnings("ignore:Converting a tensor to a Python boolean might cause the trace to be incorrect.*"),
+]
 
 
 @pytest.fixture(scope="module")
@@ -21,7 +24,7 @@ def s2s_client(tmp_path_factory):
     from floudsonnx import FloudsOnnxClient, FloudsOnnxSettings
 
     home = tmp_path_factory.mktemp("flouds_s2s")
-    return FloudsOnnxClient(FloudsOnnxSettings(home_dir=home, export_optimize=False))
+    return FloudsOnnxClient(FloudsOnnxSettings(home_dir=home))
 
 
 def test_s2s_pull(s2s_client):

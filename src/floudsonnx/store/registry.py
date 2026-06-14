@@ -37,6 +37,8 @@ class ModelRegistry:
         optimize: Optional[bool] = None,
         optimization_level: Optional[int] = None,
         opset_version: Optional[int] = None,
+        device: str = "cpu",
+        framework: Optional[str] = None,
         library: Optional[str] = None,
         normalize_embeddings: Optional[bool] = None,
         trust_remote_code: Optional[bool] = None,
@@ -69,27 +71,23 @@ class ModelRegistry:
 
             os.makedirs(str(model_dir), exist_ok=True)
 
-            s = self._settings
-            eff_optimize = optimize if optimize is not None else s.export_optimize
-            eff_opt_level = optimization_level if optimization_level is not None else s.export_optimization_level
-            eff_opset = opset_version if opset_version is not None else s.export_opset
-            eff_library = library if library is not None else s.export_library
-            eff_norm = normalize_embeddings if normalize_embeddings is not None else s.export_normalize_embeddings
-            eff_trust = trust_remote_code if trust_remote_code is not None else s.export_trust_remote_code
-            eff_ext_data = use_external_data_format if use_external_data_format is not None else s.export_use_external_data_format
-            eff_subproc = use_subprocess if use_subprocess is not None else s.export_use_subprocess
-            eff_fallback = use_fallback_if_failed if use_fallback_if_failed is not None else s.export_use_fallback_if_failed
-            eff_merge = merge if merge is not None else s.export_merge
-            eff_skip_val = skip_validator if skip_validator is not None else s.export_skip_validator
-            eff_token = hf_token or s.export_hf_token
-
+            eff_optimize = optimize if optimize is not None else False
+            eff_opt_level = optimization_level if optimization_level is not None else 99
+            eff_opset = opset_version
+            eff_norm = normalize_embeddings if normalize_embeddings is not None else False
+            eff_trust = trust_remote_code if trust_remote_code is not None else False
+            eff_ext_data = use_external_data_format if use_external_data_format is not None else False
+            eff_subproc = use_subprocess if use_subprocess is not None else False
+            eff_fallback = use_fallback_if_failed if use_fallback_if_failed is not None else False
+            eff_merge = merge if merge is not None else False
+            eff_skip_val = skip_validator if skip_validator is not None else False
             log.info(
                 "pull: exporting '%s' (model_for=%s, task=%s, optimize=%s, library=%s, normalize_embeddings=%s)",
                 model_name,
                 model_for,
                 resolved_task,
                 eff_optimize,
-                eff_library,
+                library,
                 eff_norm,
             )
 
@@ -101,9 +99,9 @@ class ModelRegistry:
                 optimize=eff_optimize,
                 optimization_level=eff_opt_level,
                 opset_version=eff_opset,
-                device=s.export_device,
-                framework=s.export_framework,
-                library=eff_library,
+                device=device,
+                framework=framework,
+                library=library,
                 normalize_embeddings=eff_norm,
                 force=force,
                 trust_remote_code=eff_trust,
@@ -112,7 +110,7 @@ class ModelRegistry:
                 use_fallback_if_failed=eff_fallback,
                 merge=eff_merge,
                 skip_validator=eff_skip_val,
-                hf_token=eff_token,
+                hf_token=hf_token,
                 **export_kwargs,
             )
 

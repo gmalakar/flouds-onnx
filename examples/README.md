@@ -1,6 +1,7 @@
 # Examples
 
-Quick-start scripts for each model type. All require `pip install floudsonnx[export]`.
+Quick-start scripts for each model type. Pulling Hugging Face models requires
+`floudsonnx[export]`; seq2seq and LLM examples also require `floudsonnx[seq2seq]`.
 
 | Script | Model type | Model |
 |---|---|---|
@@ -10,6 +11,10 @@ Quick-start scripts for each model type. All require `pip install floudsonnx[exp
 | `test_llm.py` | LLM generation | `TinyLlama/TinyLlama-1.1B-Chat-v1.0` |
 
 ## Usage
+
+```bash
+pip install "floudsonnx[export,seq2seq]"
+```
 
 ```bash
 python examples/test_fe.py

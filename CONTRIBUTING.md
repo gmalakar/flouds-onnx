@@ -12,7 +12,7 @@ python -m venv .venv
 
 # 2. Install runtime + dev dependencies
 pip install -r requirements-dev.txt
-pip install -e ".[export,seq2seq]"
+pip install -e ".[export,seq2seq,server]"
 
 # 3. Install pre-commit hooks (REQUIRED — hooks run on every commit)
 pre-commit install
@@ -50,7 +50,8 @@ python tools/check_dependency_sync.py
 
 - Do **not** install `sentence-transformers` — always pass `library="transformers"` explicitly
 - `flouds-model-exporter` must stay in `[export]` optional dep only
-- All export param defaults must match `flouds-export` CLI defaults exactly
+- Export options should be passed explicitly through Python/API/CLI calls.
+- Use `HUGGINGFACE_HUB_TOKEN` for private or gated Hugging Face models.
 
 ## Reporting issues
 
