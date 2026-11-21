@@ -11,15 +11,15 @@ Workflow file: `.github/workflows/release.yml`
 3. Bump the version:
 
 ```bash
-python tools/bump_version.py 0.1.1
+python tools/bump_version.py 2.0.1
 ```
 
 4. Commit the version/changelog update.
 5. Create and push an annotated tag:
 
 ```bash
-git tag -a v0.1.1 -m "Release v0.1.1"
-git push origin v0.1.1
+git tag -a v2.0.1 -m "Release v2.0.1"
+git push origin v2.0.1
 ```
 
 The release workflow validates that:
@@ -27,6 +27,7 @@ The release workflow validates that:
 - The tag is semantic version format: `vX.Y.Z`
 - The tag matches `project.version` in `pyproject.toml`
 - `pyproject.toml` matches `src/floudsonnx/__init__.py`
+- Lint, type checks, Bandit and the unit tests pass (with the coverage floor)
 - The package builds successfully
 - `twine check dist/*` passes
 

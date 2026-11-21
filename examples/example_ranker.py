@@ -1,5 +1,5 @@
 # =============================================================================
-# File: test_ranker.py
+# File: example_ranker.py
 # Date Created: 2026-06-10
 # Date Updated: 2026-06-12
 # Copyright (c) 2026 Goutam Malakar.

@@ -7,6 +7,7 @@ from __future__ import annotations
 import threading
 from typing import Any, List, Optional
 
+from floudsonnx.config.export_options import ExportOptions
 from floudsonnx.config.model_config import ModelConfig
 from floudsonnx.config.settings import FloudsOnnxSettings
 from floudsonnx.runtime.loader import LoadedModel, ModelLoader
@@ -26,47 +27,23 @@ class FloudsOnnxClient:
         task: Optional[str] = None,
         force: bool = False,
         config: Optional[ModelConfig] = None,
-        optimize: Optional[bool] = None,
-        optimization_level: Optional[int] = None,
-        opset_version: Optional[int] = None,
-        device: str = "cpu",
-        framework: Optional[str] = None,
-        library: Optional[str] = None,
-        normalize_embeddings: Optional[bool] = None,
-        trust_remote_code: bool = False,
-        use_external_data_format: bool = False,
-        use_subprocess: Optional[bool] = None,
-        use_fallback_if_failed: bool = False,
-        merge: bool = False,
-        skip_validator: bool = False,
-        hf_token: Optional[str] = None,
-        **kwargs: Any,
+        options: Optional[ExportOptions] = None,
+        **option_kwargs: Any,
     ) -> ModelManifest:
-        return self._loader.pull(
-            model_name,
-            model_for,
-            task=task,
-            force=force,
-            config=config,
-            optimize=optimize,
-            optimization_level=optimization_level,
-            opset_version=opset_version,
-            device=device,
-            framework=framework,
-            library=library,
-            normalize_embeddings=normalize_embeddings,
-            trust_remote_code=trust_remote_code,
-            use_external_data_format=use_external_data_format,
-            use_subprocess=use_subprocess,
-            use_fallback_if_failed=use_fallback_if_failed,
-            merge=merge,
-            skip_validator=skip_validator,
-            hf_token=hf_token,
-            **kwargs,
-        )
+        """Export a model into the local store if it is not there already.
+
+        Export options can be given as an ``ExportOptions`` object, as keyword
+        arguments named after its fields (``optimize``, ``opset_version``, ``library``,
+        ``normalize_embeddings``, ``trust_remote_code``, ``hf_token``, ...), or both.
+        """
+        return self._loader.pull(model_name, model_for, task=task, force=force, config=config, options=options, **option_kwargs)
 
     def list(self) -> List[ModelManifest]:
         return self._loader.list()
+
+    def get_manifest(self, model_name: str, model_for: str = "fe") -> Optional[ModelManifest]:
+        """Manifest of a model in the local store, or None if it is not there."""
+        return self._loader.get_manifest(model_name, model_for)
 
     def remove(self, model_name: str, model_for: str = "fe") -> bool:
         return self._loader.remove(model_name, model_for)
@@ -111,5 +88,5 @@ def get_default_client() -> FloudsOnnxClient:
     if _default_client is None:
         with _default_client_lock:
             if _default_client is None:
-                _default_client = FloudsOnnxClient()
+                _default_client = FloudsOnnxClient(FloudsOnnxSettings.from_env())
     return _default_client

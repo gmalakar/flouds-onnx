@@ -10,9 +10,8 @@ python -m venv .venv
 .venv\Scripts\activate          # Windows
 # source .venv/bin/activate     # Linux / macOS
 
-# 2. Install runtime + dev dependencies
-pip install -r requirements-dev.txt
-pip install -e ".[export,seq2seq,server]"
+# 2. Install in editable mode with the development and optional extras
+pip install -e ".[dev,export,seq2seq,server]"
 
 # 3. Install pre-commit hooks (REQUIRED — hooks run on every commit)
 pre-commit install
@@ -31,20 +30,20 @@ Or use the helper script:
 ## Local checks
 
 ```powershell
-pre-commit run --all-files          # format, lint, type-check
-pytest tests/unit/ -q               # unit tests (fast, no network)
+pre-commit run --all-files          # format, lint, type-check, bandit
+pytest tests/unit/ -q --cov=floudsonnx --cov-fail-under=85   # unit tests (fast, no network)
 pytest -m integration -v            # integration tests (requires HF access)
-python tools/check_dependency_sync.py
 ```
 
 ## Pull request checklist
 
 - [ ] `pre-commit run --all-files` passes
 - [ ] `pytest tests/unit/ -q` passes
-- [ ] New behaviour has tests
+- [ ] New behaviour has tests, and coverage stays at or above 85%
+- [ ] Anything that turns a model name or type into a path goes through `ModelRegistry._model_dir`
 - [ ] `CHANGELOG.md` updated
 - [ ] No `sentence-transformers` added to dependencies
-- [ ] `requirements-prod.txt` mirrors `pyproject.toml` if deps changed
+- [ ] Dependency changes are made in `pyproject.toml`, the only place they are listed
 
 ## Important rules
 

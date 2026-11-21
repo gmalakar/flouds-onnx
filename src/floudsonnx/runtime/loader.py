@@ -11,7 +11,6 @@ LoadedModel — the object returned to all callers.
 from __future__ import annotations
 
 import logging
-import os
 from dataclasses import dataclass, field
 from typing import Any, List, Optional
 
@@ -80,10 +79,15 @@ class ModelLoader:
         self._registry = ModelRegistry(self._settings)
         self._pool = SessionPool(
             encoder_max=self._settings.encoder_cache_max,
-            decoder_max=self._settings.decoder_cache_max,
             seq2seq_max=self._settings.seq2seq_cache_max,
+            strict_provider=self._settings.strict_provider,
+            intra_op_num_threads=self._settings.intra_op_num_threads,
+            inter_op_num_threads=self._settings.inter_op_num_threads,
         )
-        self._tokenizers = TokenizerCache()
+        self._tokenizers = TokenizerCache(
+            max_per_thread=self._settings.tokenizer_cache_max,
+            allow_hub_fallback=self._settings.allow_hub_tokenizer_fallback,
+        )
 
     # ── Store verbs ───────────────────────────────────────────────────────────
 
@@ -108,6 +112,9 @@ class ModelLoader:
 
     def list(self) -> List[ModelManifest]:
         return self._registry.list()
+
+    def get_manifest(self, model_name: str, model_for: str = "fe") -> Optional[ModelManifest]:
+        return self._registry.get_manifest(model_name, model_for)
 
     def remove(self, model_name: str, model_for: str = "fe") -> bool:
         model_dir = self._registry.model_dir_path(model_name, model_for)
@@ -168,11 +175,7 @@ class ModelLoader:
 
     def is_loaded(self, model_name: str, model_for: str = "fe") -> bool:
         model_dir = self._registry.model_dir_path(model_name, model_for)
-        abs_dir = os.path.realpath(os.path.abspath(model_dir))
-        for cache in (self._pool._encoder_cache, self._pool._decoder_cache, self._pool._seq2seq_cache):
-            if any(k.startswith(abs_dir) for k in cache.keys()):
-                return True
-        return False
+        return self._pool.contains(model_dir)
 
     def cache_stats(self) -> dict[str, Any]:
         return self._pool.stats()
@@ -199,7 +202,7 @@ class ModelLoader:
                 seq2seq_model=None,
             )
         else:
-            seq2seq = self._pool.get_or_load_seq2seq(model_dir, config)
+            seq2seq = self._pool.get_or_load_seq2seq(model_dir, config, provider)
             return LoadedModel(
                 model_name=manifest.model_name,
                 model_for=manifest.model_for,

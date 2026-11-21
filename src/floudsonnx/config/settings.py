@@ -4,8 +4,9 @@
 # =============================================================================
 from __future__ import annotations
 
+import os
 from pathlib import Path
-from typing import Optional
+from typing import Any, Mapping, Optional
 
 from pydantic import BaseModel, field_validator
 
@@ -18,6 +19,20 @@ MODEL_FOR_DEFAULT_TASKS: dict[str, str] = {
     "llm": "text-generation-with-past",
 }
 
+# Environment variables read by FloudsOnnxSettings.from_env(): variable -> field.
+ENV_FIELDS: dict[str, str] = {
+    "FLOUDSONNX_HOME_DIR": "home_dir",
+    "FLOUDSONNX_ONNX_PATH": "onnx_path",
+    "FLOUDSONNX_SESSION_PROVIDER": "session_provider",
+    "FLOUDSONNX_STRICT_PROVIDER": "strict_provider",
+    "FLOUDSONNX_INTRA_OP_THREADS": "intra_op_num_threads",
+    "FLOUDSONNX_INTER_OP_THREADS": "inter_op_num_threads",
+    "FLOUDSONNX_ENCODER_CACHE_MAX": "encoder_cache_max",
+    "FLOUDSONNX_SEQ2SEQ_CACHE_MAX": "seq2seq_cache_max",
+    "FLOUDSONNX_TOKENIZER_CACHE_MAX": "tokenizer_cache_max",
+    "FLOUDSONNX_ALLOW_HUB_TOKENIZER_FALLBACK": "allow_hub_tokenizer_fallback",
+}
+
 
 class FloudsOnnxSettings(BaseModel):
     # ── Store root ────────────────────────────────────────────────────────────
@@ -26,21 +41,60 @@ class FloudsOnnxSettings(BaseModel):
 
     # ── Session cache sizes ───────────────────────────────────────────────────
     encoder_cache_max: int = 5
-    decoder_cache_max: int = 5
     seq2seq_cache_max: int = 3
+    # Tokenizers kept per thread (fast tokenizers are not safe to share between threads).
+    tokenizer_cache_max: int = 16
 
     # ── ORT provider ─────────────────────────────────────────────────────────
     session_provider: str = "CPUExecutionProvider"
+    # When the requested provider is unavailable: fail (True) or fall back to CPU (False).
+    # A silent fall back turns a deployment mistake into a much slower service.
+    strict_provider: bool = False
 
-    @field_validator("encoder_cache_max", "decoder_cache_max", "seq2seq_cache_max")
+    # ── ORT threading ────────────────────────────────────────────────────────
+    # None leaves ONNX Runtime's default, which is one thread per physical core for
+    # every session. With several models loaded in one process, or several worker
+    # processes on one machine, set these so the sessions do not oversubscribe the CPU.
+    intra_op_num_threads: Optional[int] = None
+    inter_op_num_threads: Optional[int] = None
+
+    # ── Tokenizers ───────────────────────────────────────────────────────────
+    # Tokenizers are loaded from the model directory only. Enabling this lets a failed
+    # local load download a known replacement from the Hugging Face Hub instead.
+    allow_hub_tokenizer_fallback: bool = False
+
+    @field_validator("encoder_cache_max", "seq2seq_cache_max", "tokenizer_cache_max")
     @classmethod
     def _positive(cls, v: int) -> int:
         if v < 1:
             raise ValueError("Cache max sizes must be >= 1")
         return v
 
+    @field_validator("intra_op_num_threads", "inter_op_num_threads")
+    @classmethod
+    def _positive_or_none(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v < 1:
+            raise ValueError("Thread counts must be >= 1, or unset for the ONNX Runtime default")
+        return v
+
+    @classmethod
+    def from_env(cls, environ: Optional[Mapping[str, str]] = None, **overrides: Any) -> "FloudsOnnxSettings":
+        """Build settings from ``FLOUDSONNX_*`` environment variables.
+
+        Unset or empty variables keep the default. Keyword arguments win over the
+        environment. Used for the process-wide default client and the HTTP server;
+        pass a ``FloudsOnnxSettings`` to ``FloudsOnnxClient`` for explicit control.
+        """
+        env = os.environ if environ is None else environ
+        values: dict[str, Any] = {}
+        for variable, field in ENV_FIELDS.items():
+            raw = env.get(variable)
+            if raw is not None and raw.strip():
+                values[field] = raw.strip()
+        values.update(overrides)
+        return cls(**values)
+
     @property
     def models_root(self) -> Path:
-        root = self.onnx_path or (self.home_dir / "models")
-        root.mkdir(parents=True, exist_ok=True)
-        return root
+        """Directory holding ``<model_for>/<model folder>``. Not created by reading it."""
+        return self.onnx_path or (self.home_dir / "models")

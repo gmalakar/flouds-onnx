@@ -108,9 +108,20 @@ client = FloudsOnnxClient(
 )
 ```
 
-When `floudsonnx` calls `flouds-model-exporter`, it sets the raw `ONNX_PATH`
-environment variable internally so exported files land in the selected
-`floudsonnx` store.
+The store folder can have any name. When `floudsonnx` calls
+`flouds-model-exporter` it sets the exporter's `ONNX_PATH` variable for the
+duration of the export, and afterwards makes sure the exported files are in the
+selected store. A pull that produces no ONNX files fails with `ExportError`
+instead of recording a model that cannot be loaded.
+
+Model names and model types are validated before they are used as folder names.
+A name such as `..`, or a `model_for` containing a path separator, raises
+`InvalidModelReferenceError`.
+
+The store keeps one folder per short model name, so `org-a/bert-base` and
+`org-b/bert-base` would share `bert-base`. The second one is not served in place
+of the first: asking for it raises `ModelNameConflictError`. Remove the stored
+model, or pull with `force=True` to replace it.
 
 If you run `flouds-model-exporter` directly, use its native `ONNX_PATH`
 variable:
@@ -260,6 +271,22 @@ client.remove("BAAI/bge-base-en-v1.5", model_for="fe")
 - `is_loaded(model_name, model_for="fe")`
 - `cache_stats()`
 
+### Export options
+
+Export options can be passed as keyword arguments, as shown above, or as one
+`ExportOptions` object that you build once and reuse:
+
+```python
+from floudsonnx import ExportOptions, pull
+
+options = ExportOptions(task="feature-extraction", library="transformers", normalize_embeddings=True)
+pull("sentence-transformers/all-MiniLM-L6-v2", model_for="fe", options=options)
+pull("BAAI/bge-small-en-v1.5", model_for="fe", options=options, optimize=True)  # keywords win
+```
+
+`ExportOptions` is the single definition of every option; the CLI flags and the
+HTTP request body carry the same names. An option left as `None` uses its default.
+
 ## LoadedModel
 
 `create_model()` and `load_model()` return a `LoadedModel` with:
@@ -300,8 +327,11 @@ floudsonnx list
 # Show manifest JSON
 floudsonnx info sentence-transformers/all-MiniLM-L6-v2 --for fe
 
-# Remove from local store
+# Remove from local store (exit code 1 if it was not there or could not be deleted)
 floudsonnx remove sentence-transformers/all-MiniLM-L6-v2 --for fe
+
+# Print the installed version
+floudsonnx --version
 
 # Evict and reload from disk
 floudsonnx reload sentence-transformers/all-MiniLM-L6-v2 --for fe
@@ -358,14 +388,52 @@ Start the server:
 floudsonnx serve --host 127.0.0.1 --port 19720
 ```
 
+### Access control
+
+The server can download and export models, load them into memory and delete them from
+disk, so every route except `/health` is protected.
+
+| Mode | When | Who is served |
+|---|---|---|
+| Local | `FLOUDSONNX_API_TOKEN` is not set | Only requests from this machine: the connection must be from a loopback address and the `Host` header must be `localhost`, `127.0.0.1` or `::1`. |
+| Token | `FLOUDSONNX_API_TOKEN` is set | Any client that sends `Authorization: Bearer <token>`. |
+
+The server refuses to start on a non-loopback address (for example `--host 0.0.0.0`)
+unless a token is set:
+
+```bash
+export FLOUDSONNX_API_TOKEN="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+floudsonnx serve --host 0.0.0.0 --port 19720
+
+curl -H "Authorization: Bearer $FLOUDSONNX_API_TOKEN" http://server:19720/api/v1/models
+```
+
+Requests made by a web page (those with an `Origin` header) are refused unless the
+origin is the server itself or is listed, comma-separated, in
+`FLOUDSONNX_ALLOWED_ORIGINS`. Behind a reverse proxy every request arrives from the
+proxy's address, so set a token; local mode cannot tell proxied callers apart.
+
+The server does not use TLS. Put it behind a proxy that does if the token travels over
+a network.
+
+Two export options are not available over HTTP:
+
+- `trust_remote_code` runs Python from the model repository on the server. Use the CLI
+  or the Python API for models that need it.
+- `hf_token`: the server uses `HUGGINGFACE_HUB_TOKEN` from its own environment.
+
+A request that includes either, or any other unknown field, gets a `422` response.
+
 Routes:
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/health` | Health check. |
+| `GET` | `/health` | Liveness: the process is up. No token needed. |
+| `GET` | `/health/ready` | Readiness: the model store is usable; `503` if not. No token needed. |
 | `GET` | `/api/v1/models` | List local model manifests. |
 | `GET` | `/api/v1/models/{name}?model_for=fe` | Get one manifest. |
 | `POST` | `/api/v1/models/pull` | Pull/export a model. |
+| `POST` | `/api/v1/models/create` | Pull/export if needed, then load the model into cache. |
 | `POST` | `/api/v1/models/load` | Load a local model into cache. |
 | `POST` | `/api/v1/models/reload` | Evict and reload a model. |
 | `POST` | `/api/v1/models/unload` | Evict a model from memory. |
@@ -381,12 +449,42 @@ Pull request body:
   "task": "feature-extraction",
   "force": false,
   "optimize": false,
-  "trust_remote_code": false,
+  "optimization_level": 99,
+  "opset_version": null,
+  "device": "cpu",
+  "framework": null,
+  "library": "transformers",
+  "normalize_embeddings": true,
   "use_external_data_format": false,
+  "use_subprocess": false,
   "use_fallback_if_failed": false,
-  "hf_token": null
+  "merge": false,
+  "skip_validator": false
 }
 ```
+
+Use the same body with `POST /api/v1/models/create` when you want the remote
+equivalent of Python `create_model()`.
+
+Example:
+
+```bash
+curl -X POST http://127.0.0.1:19720/api/v1/models/create \
+  -H "Content-Type: application/json" \
+  -d '{"model_name":"sentence-transformers/all-MiniLM-L6-v2","model_for":"fe","task":"feature-extraction","library":"transformers","normalize_embeddings":true}'
+```
+
+Errors:
+
+| Status | Meaning |
+|---|---|
+| `400` | The model name or `model_for` is not valid. |
+| `401` | A token is configured and the request did not send it. |
+| `403` | No token is configured and the request is not local, or the web origin is not allowed. |
+| `404` | The model is not in the local store. |
+| `422` | The request body has a missing, wrong or unknown field. |
+| `500` | The operation failed. The response names the error type only; details are in the server log. |
+| `501` | An optional package (`floudsonnx[export]` or `floudsonnx[seq2seq]`) is not installed on the server. |
 
 Load/reload/unload request body:
 
@@ -409,18 +507,59 @@ client = FloudsOnnxClient(
         home_dir="/data/flouds",
         onnx_path="/data/flouds/models",
         session_provider="CPUExecutionProvider",
+        strict_provider=False,
+        intra_op_num_threads=4,
         encoder_cache_max=5,
-        decoder_cache_max=5,
         seq2seq_cache_max=3,
     )
 )
 ```
 
-Additional variables:
+| Setting | Default | Environment variable | Description |
+|---|---|---|---|
+| `home_dir` | `~/.flouds` | `FLOUDSONNX_HOME_DIR` | Base directory; models go in `<home_dir>/models` unless `onnx_path` is set. |
+| `onnx_path` | unset | `FLOUDSONNX_ONNX_PATH` | Model store root, any folder name. |
+| `session_provider` | `CPUExecutionProvider` | `FLOUDSONNX_SESSION_PROVIDER` | ONNX Runtime execution provider, used for encoder and seq2seq models. |
+| `strict_provider` | `False` | `FLOUDSONNX_STRICT_PROVIDER` | Fail when the provider is unavailable instead of falling back to CPU. Set this in GPU deployments. |
+| `intra_op_num_threads` | ONNX Runtime default | `FLOUDSONNX_INTRA_OP_THREADS` | Threads used inside one operator, per session. |
+| `inter_op_num_threads` | ONNX Runtime default | `FLOUDSONNX_INTER_OP_THREADS` | Threads used across operators, per session. |
+| `encoder_cache_max` | `5` | `FLOUDSONNX_ENCODER_CACHE_MAX` | Encoder sessions kept in memory. |
+| `seq2seq_cache_max` | `3` | `FLOUDSONNX_SEQ2SEQ_CACHE_MAX` | Seq2seq models kept in memory. |
+| `tokenizer_cache_max` | `16` | `FLOUDSONNX_TOKENIZER_CACHE_MAX` | Tokenizers kept per thread. |
+| `allow_hub_tokenizer_fallback` | `False` | `FLOUDSONNX_ALLOW_HUB_TOKENIZER_FALLBACK` | Let a failed local tokenizer load download a known replacement from the Hugging Face Hub. |
+
+The environment variables are read by `FloudsOnnxSettings.from_env()`. The
+top-level helpers (`create_model()`, `pull()`, ...), the CLI and the HTTP server
+use a default client built that way. A client you create yourself uses exactly
+the settings you pass:
+
+```python
+client = FloudsOnnxClient(FloudsOnnxSettings.from_env(seq2seq_cache_max=1))
+```
+
+### Performance notes
+
+- **Threads.** By default every ONNX Runtime session uses one thread per
+  physical core. With several models loaded in one process, or several worker
+  processes on one machine, the sessions compete for the same cores. Set
+  `intra_op_num_threads` to roughly `cores / concurrent sessions`.
+- **Provider.** If the requested provider is missing, the default is to fall
+  back to CPU with a warning, which can be many times slower. Use
+  `strict_provider=True` so a GPU deployment without its GPU build fails at
+  start-up.
+- **Cache limits are counts, not memory.** Three large seq2seq models can use
+  more memory than fifty small encoders. Size the limits for your models.
+- **Tokenizers are cached per thread**, because fast tokenizers are not safe to
+  share between threads. Memory therefore grows with the number of threads
+  that serve requests; `tokenizer_cache_max` bounds each thread.
+
+Other variables:
 
 | Environment variable | Used by | Description |
 |---|---|---|
-| `HUGGINGFACE_HUB_TOKEN` | Hugging Face Hub / `flouds-model-exporter` | Standard token variable for private or gated Hugging Face models. |
+| `HUGGINGFACE_HUB_TOKEN` | Hugging Face Hub / `flouds-model-exporter` | Token for private or gated Hugging Face models. Read by the CLI and the HTTP server. |
+| `FLOUDSONNX_API_TOKEN` | HTTP server | Bearer token required on every route except the health checks. |
+| `FLOUDSONNX_ALLOWED_ORIGINS` | HTTP server | Comma-separated web origins allowed to call the server. |
 | `ONNX_PATH` | `flouds-model-exporter` | Native exporter output root. `floudsonnx` sets this internally during export; configure the `floudsonnx` store with `FloudsOnnxSettings`. |
 
 ## Local Store Layout
@@ -442,26 +581,30 @@ Default layout:
     `-- llm/
 ```
 
-Each model directory contains a `manifest.json` with the model name, model
-type, export options, selected runtime strategy, discovered ONNX files, and
-model config.
+Each model directory contains a `manifest.json` with a schema version, the
+model name, model type, the export options that were actually used, the selected
+runtime strategy, discovered ONNX files, and model config. It is written
+atomically, after the export has been checked.
 
 ## Development
 
 ```bash
-pip install -r requirements-dev.txt
-pip install -e ".[export,seq2seq,server]"
+pip install -e ".[dev,export,seq2seq,server]"
 pre-commit install
-pytest tests/unit -v
+pytest tests/unit -v --cov=floudsonnx
 ```
+
+Install in editable mode (`-e`) so that scripts and the `floudsonnx` command
+use your working copy. A plain `pip install .` leaves a snapshot in
+`site-packages` that silently goes stale.
 
 Useful checks:
 
 ```bash
-python tools/check_dependency_sync.py
-black --check src tests tools
-isort --check-only src tests tools
-flake8 src tests tools
+black --check src tests
+isort --check-only src tests
+flake8 src tests
+bandit -r src -ll
 mypy src/floudsonnx
 pyright src/floudsonnx
 python -m build
@@ -473,6 +616,9 @@ Integration tests download and export real models:
 ```bash
 pytest tests/integration -m integration -v
 ```
+
+Runnable examples are in [`examples/`](examples/), and manual smoke scripts for
+all model types are in [`scripts/`](scripts/).
 
 ## Release
 

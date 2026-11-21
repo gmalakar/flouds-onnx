@@ -27,7 +27,7 @@ log = logging.getLogger(__name__)
 class OrtSeq2SeqLoader:
 
     @staticmethod
-    def load(model_dir: str, config: ModelConfig) -> Any:
+    def load(model_dir: str, config: ModelConfig, provider: str = "CPUExecutionProvider", *, strict_provider: bool = False) -> Any:
         """
         Returns an ORTModelForSeq2SeqLM instance.
         Raises OptimumNotInstalledError or ModelLoadError.
@@ -40,12 +40,16 @@ class OrtSeq2SeqLoader:
         use_cache = bool(config.use_cache) if config.use_cache is not None else False
         log.debug("OrtSeq2SeqLoader: loading '%s' use_cache=%s", model_dir, use_cache)
 
+        from floudsonnx.runtime.ort_session import resolve_provider
+
+        resolved_provider = resolve_provider(provider, strict_provider)
+        kwargs: dict[str, Any] = {"use_cache": use_cache, "local_files_only": True}
+        if resolved_provider != "CPUExecutionProvider":
+            # Optimum's own default is CPU; only name the provider when it differs.
+            kwargs["provider"] = resolved_provider
+
         try:
-            model = ORTModelForSeq2SeqLM.from_pretrained(
-                model_dir,
-                use_cache=use_cache,
-                local_files_only=True,
-            )
+            model = ORTModelForSeq2SeqLM.from_pretrained(model_dir, **kwargs)
         except Exception as exc:
             raise ModelLoadError(f"ORTModelForSeq2SeqLM failed for '{model_dir}'", detail=str(exc)) from exc
 

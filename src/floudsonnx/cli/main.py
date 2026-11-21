@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from typing import Any
 
@@ -30,29 +31,26 @@ def _client() -> Any:
     return get_default_client()
 
 
+def _version() -> str:
+    from floudsonnx import __version__
+
+    return __version__
+
+
 def cmd_pull(args: argparse.Namespace) -> int:
     print(f"Pulling '{args.model_name}' (model_for={args.model_for}, optimize={args.optimize}) ...")
     try:
-        manifest = _client().pull(
-            args.model_name,
-            model_for=args.model_for,
-            task=args.task or None,
-            force=args.force,
-            optimize=args.optimize,
-            optimization_level=args.optimization_level,
-            opset_version=args.opset_version,
-            device=args.device,
-            framework=args.framework or None,
-            library=args.library or None,
-            normalize_embeddings=args.normalize_embeddings,
-            trust_remote_code=args.trust_remote_code,
-            use_external_data_format=args.use_external_data_format,
-            use_subprocess=args.use_subprocess,
-            use_fallback_if_failed=args.use_fallback_if_failed,
-            merge=args.merge,
-            skip_validator=args.skip_validator,
-            hf_token=args.hf_token or None,
-        )
+        from floudsonnx.config.export_options import ExportOptions
+
+        # Every export option the parser defines, by the field name ExportOptions uses.
+        # Empty strings from the command line mean "not given".
+        given = {name: getattr(args, name) for name in ExportOptions.model_fields if hasattr(args, name)}
+        options = ExportOptions.build(**{name: (value if value != "" else None) for name, value in given.items()})
+        if options.hf_token is None:
+            # Prefer the environment: a token on the command line is visible in the
+            # process list and saved in shell history.
+            options = options.model_copy(update={"hf_token": os.environ.get("HUGGINGFACE_HUB_TOKEN") or None})
+        manifest = _client().pull(args.model_name, model_for=args.model_for, force=args.force, **options.as_kwargs())
         print(f"OK  {manifest.model_name}  [{manifest.model_for}]  pulled_at={manifest.pulled_at}")
         print(f"    strategy : {manifest.session_strategy}")
         print(f"    onnx     : {', '.join(manifest.onnx_files) or 'none'}")
@@ -76,7 +74,7 @@ def cmd_list(args: argparse.Namespace) -> int:
 
 
 def cmd_info(args: argparse.Namespace) -> int:
-    manifest = _client()._loader._registry.get_manifest(args.model_name, args.model_for)
+    manifest = _client().get_manifest(args.model_name, args.model_for)
     if manifest is None:
         print(f"Model '{args.model_name}' not found.", file=sys.stderr)
         return 1
@@ -85,9 +83,17 @@ def cmd_info(args: argparse.Namespace) -> int:
 
 
 def cmd_remove(args: argparse.Namespace) -> int:
-    removed = _client().remove(args.model_name, args.model_for)
-    print(f"Removed '{args.model_name}'" if removed else f"'{args.model_name}' was not in the local store.")
-    return 0
+    client = _client()
+    present = client.get_manifest(args.model_name, args.model_for) is not None
+    removed = client.remove(args.model_name, args.model_for)
+    if removed:
+        print(f"Removed '{args.model_name}'")
+        return 0
+    if present:
+        print(f"ERROR: '{args.model_name}' could not be fully deleted; a file may still be in use.", file=sys.stderr)
+    else:
+        print(f"'{args.model_name}' was not in the local store.", file=sys.stderr)
+    return 1
 
 
 def cmd_reload(args: argparse.Namespace) -> int:
@@ -119,6 +125,7 @@ def cmd_serve(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="floudsonnx", description="Ollama-style ONNX model store and runtime")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {_version()}")
     sub = parser.add_subparsers(dest="command", metavar="<command>")
     sub.required = True
 
@@ -142,7 +149,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--use-fallback-if-failed", action="store_true")
     p.add_argument("--merge", action="store_true")
     p.add_argument("--skip-validator", action="store_true")
-    p.add_argument("--hf-token", default="", help="HuggingFace API token")
+    p.add_argument("--hf-token", default="", help="HuggingFace API token. Prefer setting HUGGINGFACE_HUB_TOKEN instead.")
     p.set_defaults(func=cmd_pull)
 
     # list
@@ -183,7 +190,15 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
-    sys.exit(args.func(args))
+    from floudsonnx.exceptions import FloudsOnnxError
+
+    try:
+        code = args.func(args)
+    except FloudsOnnxError as exc:
+        # For example an invalid model name, or a name that clashes with a stored model.
+        print(f"ERROR: {exc}", file=sys.stderr)
+        code = 2
+    sys.exit(code)
 
 
 if __name__ == "__main__":

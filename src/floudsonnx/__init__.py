@@ -16,14 +16,17 @@ Quick start:
 from typing import Any, List
 
 from floudsonnx.api.client import FloudsOnnxClient, get_default_client
+from floudsonnx.config.export_options import ExportOptions
 from floudsonnx.config.model_config import ModelConfig
 from floudsonnx.config.settings import FloudsOnnxSettings
 from floudsonnx.exceptions import (
     ExporterNotInstalledError,
     ExportError,
     FloudsOnnxError,
+    InvalidModelReferenceError,
     ManifestError,
     ModelLoadError,
+    ModelNameConflictError,
     ModelNotFoundError,
     OptimumNotInstalledError,
     StrategyError,
@@ -33,7 +36,7 @@ from floudsonnx.runtime.loader import LoadedModel
 from floudsonnx.runtime.strategy import SessionStrategy
 from floudsonnx.store.manifest import ModelManifest
 
-__version__ = "1.0.0"
+__version__ = "2.0.0"
 __all__ = [
     # Primary API
     "create_model",
@@ -47,11 +50,14 @@ __all__ = [
     "get_default_client",
     # Types
     "ModelConfig",
+    "ExportOptions",
     "LoadedModel",
     "SessionStrategy",
     # Exceptions
     "FloudsOnnxError",
     "ModelNotFoundError",
+    "InvalidModelReferenceError",
+    "ModelNameConflictError",
     "ModelLoadError",
     "TokenizerError",
     "ExportError",

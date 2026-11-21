@@ -2,9 +2,16 @@ name: CI
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main, dev, "release/**"]
   pull_request:
     branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -16,21 +23,20 @@ jobs:
         python-version: ["3.11", "3.12"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
 
       - name: Install dependencies
+        # The server extra is installed so the HTTP tests run instead of being skipped.
         run: |
           pip install --upgrade pip
-          pip install -r requirements-dev.txt
-          pip install -e ".[dev]"
-
-      - name: Check dependency sync
-        run: python tools/check_dependency_sync.py
+          pip install -e ".[dev,server]"
 
       - name: Format check (black)
         run: black --check src/ tests/
@@ -47,24 +53,72 @@ jobs:
       - name: Type check (pyright)
         run: pyright src/floudsonnx
 
-      - name: Unit tests
-        run: pytest tests/unit/ -v --tb=short
+      - name: Unit tests with coverage
+        run: pytest tests/unit/ -v --tb=short --cov=floudsonnx --cov-report=term-missing:skip-covered --cov-fail-under=85
+
+  security:
+    name: Security checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[server]" bandit pip-audit
+
+      - name: Static security analysis (bandit)
+        run: bandit -r src -ll
+
+      - name: Known vulnerabilities in installed dependencies (pip-audit)
+        # Audits what a user of the base package plus the server extra would install.
+        run: pip-audit --skip-editable
+
+  package:
+    name: Build and check the distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Build
+        run: |
+          python -m pip install --upgrade pip build twine
+          python -m build
+
+      - name: Validate metadata
+        run: twine check dist/*
+
+      - name: Install the wheel in a clean environment and import it
+        run: |
+          python -m venv /tmp/wheel-check
+          /tmp/wheel-check/bin/pip install dist/*.whl
+          /tmp/wheel-check/bin/python -c "import floudsonnx; print(floudsonnx.__version__)"
+          /tmp/wheel-check/bin/floudsonnx --version
 
   integration:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
       - name: Install with export extras
         run: |
           pip install --upgrade pip
-          pip install -r requirements-dev.txt
           pip install -e ".[dev,export,seq2seq]"
 
       - name: Integration tests

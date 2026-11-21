@@ -26,8 +26,8 @@ pip install --upgrade pip --quiet
 
 # 4. Install deps
 echo "Installing dependencies..."
-pip install -r "$ROOT/requirements-dev.txt" --quiet
-pip install -e "$ROOT[export,seq2seq,server]" --quiet
+# Editable, so scripts and the floudsonnx command use this working copy.
+pip install -e "$ROOT[dev,export,seq2seq,server]" --quiet
 
 # 5. Install pre-commit hooks
 echo "Installing pre-commit hooks..."

@@ -69,13 +69,6 @@ repos:
         language: system
         files: \.py$
 
-      - id: dependency-sync
-        name: Check requirements-prod.txt mirrors pyproject.toml
-        entry: python tools/check_dependency_sync.py
-        language: system
-        pass_filenames: false
-        files: ^(pyproject\.toml|requirements-prod\.txt)$
-
       # ⭐ Pyright tuned for harmony
       - id: pyright
         name: pyright type check

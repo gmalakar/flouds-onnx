@@ -67,6 +67,11 @@ coverage.xml
 *.cover
 .hypothesis/
 
+# Packaging checks and scratch downloads
+tmp_pypi_check/
+*.whl
+*.tar.gz
+
 # Logs and temporary files
 *.log
 logs/
@@ -111,8 +116,9 @@ desktop.ini
 docs/_build/
 site/
 
-# MyPy / Pyright
+# MyPy / Pyright / Ruff
 .mypy_cache/
+.ruff_cache/
 .dmypy.json
 dmypy.json
 .pyright/

@@ -19,7 +19,7 @@ def model_dir(tmp_path):
 
 @pytest.fixture()
 def pool():
-    return SessionPool(encoder_max=2, decoder_max=2, seq2seq_max=2)
+    return SessionPool(encoder_max=2, seq2seq_max=2)
 
 
 class TestSessionPool:

@@ -1,5 +1,5 @@
 # =============================================================================
-# File: test_all_models.py
+# File: smoke_all_models.py
 # Date Created: 2026-06-10
 # Date Updated: 2026-06-12
 # Copyright (c) 2026 Goutam Malakar.
@@ -13,11 +13,11 @@ Prerequisites:
     do NOT install sentence-transformers
 
 Usage:
-    python test_all_models.py                          # all types
-    python test_all_models.py --type fe                # single type
-    python test_all_models.py --type fe s2s ranker     # multiple types
-    python test_all_models.py --no-export              # load existing only
-    python test_all_models.py --type llm --home C:/tmp/flouds
+    python scripts/smoke_all_models.py                          # all types
+    python scripts/smoke_all_models.py --type fe                # single type
+    python scripts/smoke_all_models.py --type fe s2s ranker     # multiple types
+    python scripts/smoke_all_models.py --no-export              # load existing only
+    python scripts/smoke_all_models.py --type llm --home C:/tmp/flouds
 """
 from __future__ import annotations
 

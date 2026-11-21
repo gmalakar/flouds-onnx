@@ -29,8 +29,8 @@ python -m pip install --upgrade pip --quiet
 
 # 4. Install deps
 Write-Host "Installing dependencies..." -ForegroundColor Yellow
-pip install -r "$Root\requirements-dev.txt" --quiet
-pip install -e "$Root[export,seq2seq,server]" --quiet
+# Editable, so scripts and the floudsonnx command use this working copy.
+pip install -e "$Root[dev,export,seq2seq,server]" --quiet
 
 # 5. Install pre-commit hooks
 Write-Host "Installing pre-commit hooks..." -ForegroundColor Yellow

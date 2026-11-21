@@ -13,10 +13,10 @@ Prerequisites:
     do NOT install sentence-transformers — use library=transformers
 
 Usage:
-    python manual_test.py
-    python manual_test.py --model t5-small --for s2s
-    python manual_test.py --no-export
-    python manual_test.py --home C:/tmp/flouds
+    python scripts/manual_test.py
+    python scripts/manual_test.py --model t5-small --for s2s
+    python scripts/manual_test.py --no-export
+    python scripts/manual_test.py --home C:/tmp/flouds
 """
 from __future__ import annotations
 

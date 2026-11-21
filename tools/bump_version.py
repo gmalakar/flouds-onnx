@@ -32,7 +32,7 @@ def bump(new_version: str) -> None:
         print("ERROR: version field not found in pyproject.toml")
         sys.exit(1)
     pyproject.write_text(text, encoding="utf-8")
-    print(f"  pyproject.toml   → {new_version}")
+    print(f"  pyproject.toml   -> {new_version}")
 
     # __init__.py
     init = ROOT / "src" / "floudsonnx" / "__init__.py"
@@ -42,7 +42,7 @@ def bump(new_version: str) -> None:
         print("ERROR: __version__ not found in __init__.py")
         sys.exit(1)
     init.write_text(text, encoding="utf-8")
-    print(f"  __init__.py      → {new_version}")
+    print(f"  __init__.py      -> {new_version}")
 
     print(f"\nDone. Version bumped to {new_version}")
     print("Next steps:")

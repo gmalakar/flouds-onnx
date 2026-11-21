@@ -1,9 +1,6 @@
 # =============================================================================
-# File: exporter_bridge.py
-# Date Created: 2026-06-10
-# Date Updated: 2026-06-11
-# Copyright (c) 2026 Goutam Malakar.
-# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Goutam Malakar. All rights reserved.
+# Licensed under the Apache License, Version 2.0.
 # =============================================================================
 """
 floudsonnx.store.exporter_bridge
@@ -17,53 +14,56 @@ Mirrors the CLI invocation:
         --library transformers \\
         --normalize-embeddings
 
-All param defaults match the flouds-export CLI defaults exactly.
 Key notes:
-  - task must not be None; registry auto-resolves from model_for if omitted.
+  - The options are defined in floudsonnx.config.export_options.ExportOptions; their
+    defaults match the flouds-export CLI defaults.
+  - task must not be None; the registry resolves it from model_for if omitted.
   - library="transformers" bypasses sentence_transformers auto-detection.
-  - use_subprocess=False matches CLI default; set True for models where
-    in-process export fails (e.g. sentence-transformers with ST installed).
-  - ONNX_PATH env var is set to <home_dir> and restored after export.
+  - ONNX_PATH is set for the duration of the export and restored afterwards. It is a
+    process-wide variable, so exports take turns.
 """
 from __future__ import annotations
 
 import os
+import threading
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
+from floudsonnx.config.export_options import ExportOptions
 from floudsonnx.exceptions import ExporterNotInstalledError, ExportError
+
+# ONNX_PATH is a process-wide environment variable. Two exports into different stores
+# at the same time would each see the other's value, so exports take turns.
+_ENV_LOCK = threading.Lock()
 
 
 class ExporterBridge:
+
+    @staticmethod
+    def onnx_root_for(model_dir: str) -> str:
+        """The exporter root for *model_dir*: three levels up.
+
+        The exporter writes to ``<root>/models/<model_for>/<folder>``.
+        """
+        return str(Path(model_dir).parent.parent.parent)
 
     @staticmethod
     def export(
         model_name: str,
         model_dir: str,
         model_for: str,
-        task: str,  # required — must not be None
-        optimize: bool = False,
-        optimization_level: int = 99,
-        opset_version: int | None = None,
-        device: str = "cpu",
-        framework: str | None = None,
-        library: str | None = None,
-        normalize_embeddings: bool = False,
+        task: Optional[str] = None,
+        *,
         force: bool = False,
-        trust_remote_code: bool = False,
-        use_external_data_format: bool = False,
-        use_subprocess: bool = False,  # matches CLI default
-        use_fallback_if_failed: bool = False,  # matches CLI default
-        merge: bool = False,
-        skip_validator: bool = False,
-        hf_token: str | None = None,
-        **kwargs: Any,
+        options: Optional[ExportOptions] = None,
+        **option_kwargs: Any,
     ) -> str:
         """
         Export *model_name* using flouds-model-exporter.
 
-        Sets ONNX_PATH = <home_dir> (root above models/<model_for>/<folder>)
-        before calling export(), restores it in a finally block.
+        Options come from *options*, from keyword arguments named after
+        ``ExportOptions`` fields, or both (keywords win). Unknown keywords are passed
+        to the exporter unchanged.
 
         Returns the output directory path on success.
         Raises ExporterNotInstalledError or ExportError.
@@ -73,51 +73,23 @@ class ExporterBridge:
         except ImportError as exc:
             raise ExporterNotInstalledError() from exc
 
-        # ONNX_PATH = root above models/<model_for>/<folder>
-        # model_dir  = <home>/models/<model_for>/<folder>
-        # onnx_root  = <home>
-        onnx_root = str(Path(model_dir).parent.parent.parent)
-        _orig = os.environ.get("ONNX_PATH")
-        os.environ["ONNX_PATH"] = onnx_root
+        resolved = ExportOptions.build(options, task=task, **option_kwargs)
+        call_kwargs: dict[str, Any] = {"model_name": model_name, "model_for": model_for, "force": force, **resolved.exporter_kwargs()}
 
-        call_kwargs: dict[str, Any] = {
-            "model_name": model_name,
-            "model_for": model_for,
-            "task": task,
-            "optimize": optimize,
-            "optimization_level": optimization_level,
-            "device": device,
-            "normalize_embeddings": normalize_embeddings,
-            "force": force,
-            "trust_remote_code": trust_remote_code,
-            "use_external_data_format": use_external_data_format,
-            "use_subprocess": use_subprocess,
-            "use_fallback_if_failed": use_fallback_if_failed,
-            "merge": merge,
-            "skip_validator": skip_validator,
-        }
-        if opset_version is not None:
-            call_kwargs["opset_version"] = opset_version
-        if framework is not None:
-            call_kwargs["framework"] = framework
-        if library is not None:
-            call_kwargs["library"] = library
-        if hf_token is not None:
-            call_kwargs["huggingface_hub_token"] = hf_token
-
-        call_kwargs.update(kwargs)
-
-        try:
-            result = _export(**call_kwargs)
-        except Exception as exc:
-            raise ExportError(
-                f"Export failed for '{model_name}'",
-                detail=str(exc),
-            ) from exc
-        finally:
-            if _orig is None:
-                os.environ.pop("ONNX_PATH", None)
-            else:
-                os.environ["ONNX_PATH"] = _orig
+        with _ENV_LOCK:
+            _orig = os.environ.get("ONNX_PATH")
+            os.environ["ONNX_PATH"] = ExporterBridge.onnx_root_for(model_dir)
+            try:
+                result = _export(**call_kwargs)
+            except Exception as exc:
+                raise ExportError(
+                    f"Export failed for '{model_name}'",
+                    detail=f"{type(exc).__name__}: {exc}",
+                ) from exc
+            finally:
+                if _orig is None:
+                    os.environ.pop("ONNX_PATH", None)
+                else:
+                    os.environ["ONNX_PATH"] = _orig
 
         return str(result)

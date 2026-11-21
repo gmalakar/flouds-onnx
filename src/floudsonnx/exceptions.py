@@ -25,12 +25,19 @@ class FloudsOnnxError(Exception):
 # ── Store layer ───────────────────────────────────────────────────────────────
 
 
+class InvalidModelReferenceError(FloudsOnnxError, ValueError):
+    """A model name or model type cannot be used to address the local store.
+
+    Also a ValueError, so existing ``except ValueError`` handlers keep working.
+    """
+
+
 class ModelNotFoundError(FloudsOnnxError):
     """Model does not exist in the local store and cannot be pulled."""
 
 
-class ModelAlreadyExistsError(FloudsOnnxError):
-    """pull() called without force=True on an already-stored model."""
+class ModelNameConflictError(FloudsOnnxError):
+    """A different model with the same short name already occupies the store folder."""
 
 
 class ManifestError(FloudsOnnxError):
@@ -63,10 +70,6 @@ class StrategyError(FloudsOnnxError):
     """Cannot determine a session strategy from the given ModelConfig."""
 
 
-class CacheError(FloudsOnnxError):
-    """Internal session pool or tokenizer cache error."""
-
-
 class OptimumNotInstalledError(ModelLoadError):
     """optimum[onnxruntime] is not installed; required for seq2seq models."""
 
@@ -82,3 +85,7 @@ class ServerNotInstalledError(FloudsOnnxError):
 
     def __init__(self) -> None:
         super().__init__("fastapi and uvicorn are required for the HTTP server. " "Install them with: pip install floudsonnx[server]")
+
+
+class ServerConfigurationError(FloudsOnnxError):
+    """The HTTP server was asked to start in an unsafe or invalid configuration."""
