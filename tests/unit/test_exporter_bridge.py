@@ -38,14 +38,16 @@ class TestExporterBridge:
         model_dir.mkdir(parents=True)
         assert str(Path(str(model_dir)).parent.parent.parent) == str(tmp_path)
 
-    def test_sets_onnx_path_env_var(self, tmp_path):
-        """ExporterBridge must set ONNX_PATH to home root before calling export()."""
+    def test_passes_the_store_root_as_onnx_path(self, tmp_path, monkeypatch):
+        """The exporter gets the store root as an argument; ONNX_PATH is never touched."""
         model_dir = str(tmp_path / "models" / "fe" / "mymodel")
         os.makedirs(model_dir, exist_ok=True)
-        captured_env = {}
+        monkeypatch.setenv("ONNX_PATH", "/caller/own/value")
+        captured = {}
 
         def fake_export(**kw):
-            captured_env["ONNX_PATH"] = os.environ.get("ONNX_PATH")
+            captured.update(kw)
+            captured["env_during_export"] = os.environ.get("ONNX_PATH")
             return model_dir
 
         mock_pipeline = MagicMock()
@@ -61,38 +63,9 @@ class TestExporterBridge:
         ):
             ExporterBridge.export("org/model", model_dir, "fe", task="feature-extraction")
 
-        assert captured_env["ONNX_PATH"] == str(tmp_path)
-
-    def test_restores_onnx_path_after_export(self, tmp_path):
-        """ONNX_PATH env var is restored to its original value after export."""
-        model_dir = str(tmp_path / "models" / "fe" / "mymodel")
-        os.makedirs(model_dir, exist_ok=True)
-
-        original = os.environ.get("ONNX_PATH")
-        os.environ["ONNX_PATH"] = "/original/path"
-
-        def fake_export(**kw):
-            return model_dir
-
-        mock_pipeline = MagicMock()
-        mock_pipeline.export = fake_export
-
-        with patch.dict(
-            sys.modules,
-            {
-                "model_exporter": MagicMock(),
-                "model_exporter.export": MagicMock(),
-                "model_exporter.export.pipeline": mock_pipeline,
-            },
-        ):
-            ExporterBridge.export("x/model", model_dir, "fe", task="feature-extraction")
-
-        assert os.environ.get("ONNX_PATH") == "/original/path"
-
-        if original is None:
-            os.environ.pop("ONNX_PATH", None)
-        else:
-            os.environ["ONNX_PATH"] = original
+        assert captured["onnx_path"] == str(tmp_path)
+        assert captured["env_during_export"] == "/caller/own/value"
+        assert os.environ["ONNX_PATH"] == "/caller/own/value"
 
     def test_passes_task_and_optimize_to_exporter(self, tmp_path):
         """task and optimize are forwarded to export()."""

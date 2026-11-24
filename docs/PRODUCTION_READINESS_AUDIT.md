@@ -82,7 +82,7 @@ Status of the top ten:
 | 5 | Custom `onnx_path` breaks exports | Fixed |
 | 6 | Eviction matches by name prefix | Fixed |
 | 7 | Per-thread tokenizer cache: stale after reload, unbounded | Fixed (still per thread, by design; now bounded and invalidated everywhere) |
-| 8 | Concurrent exports share `ONNX_PATH` | Fixed: exports take turns. The cost is that two exports no longer run in parallel |
+| 8 | Concurrent exports share `ONNX_PATH` | Fixed: the store root is now an argument to the exporter and the environment is not touched. Exports in one process still take turns, because the exporter changes process-wide state while it runs |
 | 9 | Blocking work on the event loop | Fixed |
 | 10 | Silent Hub download for tokenizers | Fixed: opt-in |
 
@@ -90,9 +90,10 @@ Refactoring done after the fixes: the export options are defined once (`ExportOp
 
 Still open, and why the scores are not higher:
 
-- **Store identity.** No revision is recorded and no file hashes are checked, so a
-  modified model file is loaded without question (S6), and two variants of one model
-  cannot coexist (A1).
+- **Store identity.** The revision is recorded when one is requested, and a pull for a
+  different revision is refused instead of answered with the stored one. No file hashes
+  are checked, so a modified model file is loaded without question (S6), and two
+  variants of one model still cannot coexist (A1).
 - **No locking between processes.** Two processes pulling the same model into one
   store still race. Run one writer, or one worker.
 - **Cache limits are counts, not memory** (A5).
@@ -525,7 +526,7 @@ Specific points:
 | `onnxruntime` | `>=1.20.1` | Medium: no upper bound on a library with behaviour changes between minors | Add a tested upper bound |
 | `transformers` | `>=4.44.0,<4.58.0` | Low: bounded, but the 5.x line is excluded and will need work | Track and test 5.x |
 | `pydantic` | `>=2.0` | Low | Fine |
-| `flouds-model-exporter` | `>=1.0.1` (extra) | Medium: the contract is an environment variable and a directory convention (A3); the local environment has 0.2.0 installed, so local runs do not test the declared version | Pass arguments explicitly; reinstall the environment from the declared ranges |
+| `flouds-model-exporter` | `>=2.0.0,<3` (extra) | Low: the store root is passed as an argument, the exporter's own errors are translated, and the declared version is the one tested (unit and real-export tests against the 2.0.0 wheel) | Keep the upper bound until 3.0 is tested |
 | `optimum[onnxruntime]` | `>=1.22.0` (extra) | Medium: no upper bound, and the code patches a private attribute | Bound it and test the supported range |
 | `fastapi`, `uvicorn` | unbounded (extra) | Low | Add upper bounds |
 | Dev tools | exact pins from early 2024 (black 24.1.1, mypy 1.8.0, bandit 1.7.5) | Low: stale | Update on a schedule |

@@ -20,10 +20,14 @@ try:
     from floudsonnx.config.export_options import ExportOptions, SafeExportOptions
     from floudsonnx.exceptions import (
         ExporterNotInstalledError,
+        ExportInProgressError,
         FloudsOnnxError,
         InvalidModelReferenceError,
+        ModelNameConflictError,
         ModelNotFoundError,
         OptimumNotInstalledError,
+        RemoteCodeRequiredError,
+        RevisionMismatchError,
     )
 
     router = APIRouter(tags=["models"])
@@ -39,6 +43,14 @@ try:
             return HTTPException(status_code=400, detail=str(exc))
         if isinstance(exc, ModelNotFoundError):
             return HTTPException(status_code=404, detail=exc.args[0] if exc.args else "Model not found")
+        if isinstance(exc, RemoteCodeRequiredError):
+            # trust_remote_code cannot be set over HTTP, so say how it can be done.
+            return HTTPException(
+                status_code=422,
+                detail=f"{exc.args[0]}. The server never enables it; pull this model with the Python API or the CLI.",
+            )
+        if isinstance(exc, (ExportInProgressError, ModelNameConflictError, RevisionMismatchError)):
+            return HTTPException(status_code=409, detail=str(exc))
         if isinstance(exc, (ExporterNotInstalledError, OptimumNotInstalledError)):
             return HTTPException(status_code=501, detail=exc.args[0] if exc.args else "A required optional package is not installed")
         log.error("floudsonnx server: %s: %s", type(exc).__name__, exc)

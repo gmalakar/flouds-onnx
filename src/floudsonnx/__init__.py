@@ -22,6 +22,7 @@ from floudsonnx.config.settings import FloudsOnnxSettings
 from floudsonnx.exceptions import (
     ExporterNotInstalledError,
     ExportError,
+    ExportInProgressError,
     FloudsOnnxError,
     InvalidModelReferenceError,
     ManifestError,
@@ -29,6 +30,8 @@ from floudsonnx.exceptions import (
     ModelNameConflictError,
     ModelNotFoundError,
     OptimumNotInstalledError,
+    RemoteCodeRequiredError,
+    RevisionMismatchError,
     StrategyError,
     TokenizerError,
 )
@@ -62,6 +65,9 @@ __all__ = [
     "TokenizerError",
     "ExportError",
     "ExporterNotInstalledError",
+    "ExportInProgressError",
+    "RemoteCodeRequiredError",
+    "RevisionMismatchError",
     "OptimumNotInstalledError",
     "ManifestError",
     "StrategyError",

@@ -87,7 +87,7 @@ Core dependencies:
 
 Optional extras:
 
-- `export`: `flouds-model-exporter>=1.0.1`
+- `export`: `flouds-model-exporter>=2.0.0,<3`
 - `seq2seq`: `optimum[onnxruntime]`
 - `server`: `fastapi`, `uvicorn[standard]`
 
@@ -108,11 +108,25 @@ client = FloudsOnnxClient(
 )
 ```
 
-The store folder can have any name. When `floudsonnx` calls
-`flouds-model-exporter` it sets the exporter's `ONNX_PATH` variable for the
-duration of the export, and afterwards makes sure the exported files are in the
-selected store. A pull that produces no ONNX files fails with `ExportError`
-instead of recording a model that cannot be loaded.
+The store folder can have any name. `floudsonnx` passes the store root to
+`flouds-model-exporter` as an argument (the `ONNX_PATH` variable is not used or
+changed), and afterwards makes sure the exported files are in the selected store.
+A pull that produces no ONNX files fails with `ExportError` instead of recording a
+model that cannot be loaded. Exports in one process run one at a time.
+
+Pass `revision` to export a specific branch, tag or commit; a commit hash gives a
+reproducible export. The revision is recorded in the manifest as `hf_revision`.
+Asking later for a different revision raises `RevisionMismatchError` rather than
+returning the stored export; pull with `force=True` to replace it.
+
+```python
+client.pull("sentence-transformers/all-MiniLM-L6-v2", revision="<commit hash from the model page>")
+```
+
+A model that needs `trust_remote_code` raises `RemoteCodeRequiredError` unless you
+pass `trust_remote_code=True`, which runs code from the model repository; review it
+first. The HTTP server never accepts that option, so such models must be pulled
+with the Python API or the CLI.
 
 Model names and model types are validated before they are used as folder names.
 A name such as `..`, or a `model_for` containing a path separator, raises
@@ -459,7 +473,8 @@ Pull request body:
   "use_subprocess": false,
   "use_fallback_if_failed": false,
   "merge": false,
-  "skip_validator": false
+  "skip_validator": false,
+  "revision": null
 }
 ```
 
@@ -482,7 +497,8 @@ Errors:
 | `401` | A token is configured and the request did not send it. |
 | `403` | No token is configured and the request is not local, or the web origin is not allowed. |
 | `404` | The model is not in the local store. |
-| `422` | The request body has a missing, wrong or unknown field. |
+| `409` | Another process is exporting the same model, a different model already uses the store folder, or the stored export is from a different revision. |
+| `422` | The request body has a missing, wrong or unknown field, or the model needs `trust_remote_code` (pull it with the Python API or the CLI). |
 | `500` | The operation failed. The response names the error type only; details are in the server log. |
 | `501` | An optional package (`floudsonnx[export]` or `floudsonnx[seq2seq]`) is not installed on the server. |
 
@@ -560,7 +576,7 @@ Other variables:
 | `HUGGINGFACE_HUB_TOKEN` | Hugging Face Hub / `flouds-model-exporter` | Token for private or gated Hugging Face models. Read by the CLI and the HTTP server. |
 | `FLOUDSONNX_API_TOKEN` | HTTP server | Bearer token required on every route except the health checks. |
 | `FLOUDSONNX_ALLOWED_ORIGINS` | HTTP server | Comma-separated web origins allowed to call the server. |
-| `ONNX_PATH` | `flouds-model-exporter` | Native exporter output root. `floudsonnx` sets this internally during export; configure the `floudsonnx` store with `FloudsOnnxSettings`. |
+| `ONNX_PATH` | `flouds-model-exporter` | Native exporter output root, used only when you run `flouds-export` yourself. `floudsonnx` ignores it; configure the store with `FloudsOnnxSettings`. |
 
 ## Local Store Layout
 

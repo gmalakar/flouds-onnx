@@ -37,7 +37,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-export = ["flouds-model-exporter>=1.0.1"]
+# 2.0.0 is the first release that never enables trust_remote_code by itself and does
+# not save the Hugging Face token; floudsonnx relies on both.
+export = ["flouds-model-exporter>=2.0.0,<3"]
 seq2seq = ["optimum[onnxruntime]>=1.22.0"]
 server = ["fastapi>=0.110.0,<1.0", "uvicorn[standard]>=0.29.0,<1.0"]
 dev = [

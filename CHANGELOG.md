@@ -17,6 +17,7 @@ and this project uses [Semantic Versioning](https://semver.org/).
 - `trust_remote_code` and `hf_token` are no longer accepted in HTTP requests. Remote code would run on the server for any caller, and the token would appear in request bodies and logs.
 - HTTP error responses no longer include filesystem paths or third-party error output; the detail is written to the server log.
 - A model from one organisation is no longer served in place of another with the same short name (`org-a/bert-base` and `org-b/bert-base` share a folder). Asking for the second raises `ModelNameConflictError`.
+- **Breaking:** the `export` extra requires `flouds-model-exporter>=2.0.0,<3`. Earlier exporter versions could load a model with `trust_remote_code=True` after the caller passed `False`, and saved the Hugging Face token to disk as the machine's default credential; 2.0.0 does neither.
 - Tokenizers are loaded from local files only. The automatic download of a replacement tokenizer from the Hugging Face Hub is off unless `allow_hub_tokenizer_fallback` is set.
 
 ### Fixed
@@ -31,7 +32,8 @@ and this project uses [Semantic Versioning](https://semver.org/).
 - `manifest.json` is written atomically, so an interrupted write cannot leave a truncated file.
 - `remove()` returns `False` when the directory could not be deleted (for example a model file still open on Windows) instead of reporting success.
 - Reloading or removing a model now makes every thread reload its tokenizer; before, only the calling thread did and the others kept the old one.
-- Concurrent exports no longer overwrite each other's `ONNX_PATH`; exports take turns.
+- Exports no longer change the process environment: the store root is passed to the exporter as an argument instead of through `ONNX_PATH`. Exports in one process still take turns, because the exporter changes process-wide state (stderr, thread-count variables) while it runs.
+- Errors from the exporter keep their meaning: a model that needs `trust_remote_code` raises `RemoteCodeRequiredError` (HTTP `422`), another process exporting the same model raises `ExportInProgressError` (HTTP `409`), and an invalid name raises `InvalidModelReferenceError` (HTTP `400`). Before, all of them became a generic `ExportError`, and an export already in progress ended the process with `SystemExit`. A failed export's `detail` is the exporter's last error instead of only "All export attempts failed".
 - The configured execution provider is now applied to seq2seq models, which previously always used the default.
 - Reading the store (`list`, `exists`, `get_manifest`) no longer creates the store directory.
 - `floudsonnx remove` exits with code 1 when nothing was removed, and an invalid model name prints an error instead of a traceback.
@@ -63,6 +65,8 @@ and this project uses [Semantic Versioning](https://semver.org/).
 - `ModelNameConflictError`, `ServerConfigurationError`.
 - Dependabot configuration for Python packages and GitHub Actions.
 - `ExportOptions` and `SafeExportOptions` (the subset accepted over HTTP).
+- `revision` export option (`--revision` on the CLI, `revision` in HTTP pull requests): the branch, tag or commit to export. It is recorded in the manifest as `hf_revision`, and a later pull that asks for a different revision raises `RevisionMismatchError` (HTTP `409`) instead of returning the stored one; pass `force=True` to replace it.
+- `RemoteCodeRequiredError`, `ExportInProgressError` and `RevisionMismatchError`. `ModelNameConflictError` is now reported as HTTP `409` instead of `500`.
 
 ## [1.0.0] - 2026-06-14
 ### Added

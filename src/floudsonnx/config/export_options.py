@@ -45,6 +45,9 @@ class SafeExportOptions(BaseModel):
     use_fallback_if_failed: bool = False
     merge: bool = False
     skip_validator: bool = False
+    # Branch, tag or commit of the model repository. A commit hash gives a
+    # reproducible export; None means the repository's main branch.
+    revision: Optional[str] = None
 
     @model_validator(mode="before")
     @classmethod
@@ -110,6 +113,8 @@ class ExportOptions(SafeExportOptions):
             kwargs["framework"] = self.framework
         if self.library is not None:
             kwargs["library"] = self.library
+        if self.revision is not None:
+            kwargs["revision"] = self.revision
         if self.hf_token is not None:
             kwargs["huggingface_hub_token"] = self.hf_token
         kwargs.update(self.extra)

@@ -196,19 +196,18 @@ class TestRemoveTellsTheTruth:
         assert registry.remove("org/model") is False
 
 
-class TestConcurrentExportsDoNotShareTheEnvironmentVariable:
-    def test_each_export_sees_its_own_onnx_path_for_its_whole_duration(self, tmp_path, monkeypatch):
+class TestConcurrentExportsGetTheirOwnRootAndTakeTurns:
+    def test_each_export_gets_its_own_root_and_exports_do_not_overlap(self, tmp_path, monkeypatch):
         seen = {}
         both_inside = threading.Barrier(2, timeout=1)
 
         def fake_export(**kw):
-            first = os.environ.get("ONNX_PATH")
             try:
                 both_inside.wait()  # succeeds only if two exports run at the same time
                 overlapped = True
             except threading.BrokenBarrierError:
                 overlapped = False
-            seen[kw["model_name"]] = (first, os.environ.get("ONNX_PATH"), overlapped)
+            seen[kw["model_name"]] = (kw["onnx_path"], overlapped)
             return "ok"
 
         import sys
@@ -235,8 +234,8 @@ class TestConcurrentExportsDoNotShareTheEnvironmentVariable:
             thread.join()
 
         for name, model_dir in dirs.items():
-            start, end, overlapped = seen[name]
-            expected = str(model_dir.parents[2])
-            assert start == expected and end == expected
+            root, overlapped = seen[name]
+            assert root == str(model_dir.parents[2])
+            # The exporter changes process-wide state during an export, so they take turns.
             assert overlapped is False
         assert "ONNX_PATH" not in os.environ

@@ -40,12 +40,29 @@ class ModelNameConflictError(FloudsOnnxError):
     """A different model with the same short name already occupies the store folder."""
 
 
+class RevisionMismatchError(FloudsOnnxError):
+    """The stored export was made from a different revision than the one requested."""
+
+
 class ManifestError(FloudsOnnxError):
     """manifest.json is missing, corrupt, or fails schema validation."""
 
 
 class ExportError(FloudsOnnxError):
     """flouds-model-exporter raised an error during ONNX export."""
+
+
+class RemoteCodeRequiredError(ExportError):
+    """The model needs ``trust_remote_code``, which was not allowed.
+
+    Loading such a model runs Python from the model repository. Pass
+    ``trust_remote_code=True`` after reviewing that code. The HTTP server never accepts
+    it, so such models must be pulled through the Python API or the CLI.
+    """
+
+
+class ExportInProgressError(ExportError):
+    """Another process is already exporting this model into the store."""
 
 
 class ExporterNotInstalledError(ExportError):

@@ -14,7 +14,7 @@ from typing import Any, List, Optional
 from floudsonnx.config.export_options import ExportOptions
 from floudsonnx.config.model_config import ModelConfig
 from floudsonnx.config.settings import MODEL_FOR_DEFAULT_TASKS, FloudsOnnxSettings
-from floudsonnx.exceptions import ExportError, InvalidModelReferenceError, ManifestError, ModelNameConflictError
+from floudsonnx.exceptions import ExportError, InvalidModelReferenceError, ManifestError, ModelNameConflictError, RevisionMismatchError
 from floudsonnx.store.exporter_bridge import ExporterBridge
 from floudsonnx.store.manifest import ExportOptions as ManifestExportOptions
 from floudsonnx.store.manifest import ModelManifest
@@ -65,6 +65,7 @@ class ModelRegistry:
                         # A different model that happens to share the folder name must
                         # not be handed back as if it were the one asked for.
                         self._check_same_model(model_name, manifest)
+                        self._check_same_revision(model_name, opts.revision, manifest)
                         log.debug("pull: '%s' already on disk; skipping export", key)
                         return manifest
                 else:
@@ -86,13 +87,14 @@ class ModelRegistry:
                 ExporterBridge.export(model_name=model_name, model_dir=str(model_dir), model_for=model_for, force=force, **opts.as_kwargs())
                 self._collect_export_output(model_for, folder, model_dir)
             except BaseException:
-                # Includes SystemExit, which the exporter raises when another process is
-                # already exporting this model. Only empty folders are removed, so that
+                # Includes ExportInProgressError, raised when another process is already
+                # exporting this model. Only empty folders are removed, so that
                 # process's files are never touched.
                 self._remove_if_empty(model_dir)
                 raise
 
             manifest = self._build_manifest(model_name, model_for, folder, model_dir, ManifestExportOptions(**opts.manifest_record()), config)
+            manifest.hf_revision = opts.revision
             if not manifest.onnx_files:
                 # Without this check a failed or misdirected export would be recorded as
                 # a model that can never be loaded.
@@ -213,6 +215,16 @@ class ModelRegistry:
             raise ModelNameConflictError(
                 f"'{requested}' shares its folder with '{manifest.model_name}', which is already stored.",
                 detail="Remove the stored model first, or pull with force=True to replace it.",
+            )
+
+    @staticmethod
+    def _check_same_revision(requested_name: str, revision: Optional[str], manifest: ModelManifest) -> None:
+        """A pull that names a revision must not be answered with another revision."""
+        if revision is not None and revision != manifest.hf_revision:
+            stored = manifest.hf_revision or "the default branch (no revision recorded)"
+            raise RevisionMismatchError(
+                f"'{requested_name}' is stored from {stored}, not revision '{revision}'.",
+                detail="Pull with force=True to replace it with the requested revision.",
             )
 
     def _collect_export_output(self, model_for: str, folder: str, model_dir: Path) -> None:

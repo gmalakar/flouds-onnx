@@ -149,6 +149,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--use-fallback-if-failed", action="store_true")
     p.add_argument("--merge", action="store_true")
     p.add_argument("--skip-validator", action="store_true")
+    p.add_argument("--revision", default="", help="Branch, tag or commit to export; a commit hash gives a reproducible export")
     p.add_argument("--hf-token", default="", help="HuggingFace API token. Prefer setting HUGGINGFACE_HUB_TOKEN instead.")
     p.set_defaults(func=cmd_pull)
 
