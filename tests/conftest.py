@@ -9,8 +9,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from floudsonnx.config.model_config import ModelConfig
-from floudsonnx.config.settings import FloudsOnnxSettings
+from flouds_onnx.config.model_config import ModelConfig
+from flouds_onnx.config.settings import FloudsOnnxSettings
 
 
 @pytest.fixture()

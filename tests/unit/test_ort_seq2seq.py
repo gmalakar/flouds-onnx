@@ -6,9 +6,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from floudsonnx.config.model_config import ModelConfig
-from floudsonnx.exceptions import ModelLoadError, OptimumNotInstalledError
-from floudsonnx.runtime.ort_seq2seq import OrtSeq2SeqLoader
+from flouds_onnx.config.model_config import ModelConfig
+from flouds_onnx.exceptions import ModelLoadError, OptimumNotInstalledError
+from flouds_onnx.runtime.ort_seq2seq import OrtSeq2SeqLoader
 
 
 @pytest.fixture()
@@ -41,7 +41,7 @@ class TestOrtSeq2SeqLoader:
         mock_cls.from_pretrained.return_value = mock_model
 
         with patch.dict("sys.modules", {"optimum": MagicMock(), "optimum.onnxruntime": MagicMock()}):
-            with patch("floudsonnx.runtime.ort_seq2seq.OrtSeq2SeqLoader.load", return_value=mock_model):
+            with patch("flouds_onnx.runtime.ort_seq2seq.OrtSeq2SeqLoader.load", return_value=mock_model):
                 result = OrtSeq2SeqLoader.load(s2s_dir, s2s_config)
 
         assert result is mock_model

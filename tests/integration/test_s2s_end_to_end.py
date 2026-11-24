@@ -6,7 +6,7 @@
 Integration test: full pull → load → generate for a real S2S model.
 
 Requires:
-  pip install floudsonnx[export,seq2seq]
+  pip install flouds-onnx[export,seq2seq]
   Internet access
 
 Run with:  pytest -m integration
@@ -21,7 +21,7 @@ pytestmark = [
 
 @pytest.fixture(scope="module")
 def s2s_client(tmp_path_factory):
-    from floudsonnx import FloudsOnnxClient, FloudsOnnxSettings
+    from flouds_onnx import FloudsOnnxClient, FloudsOnnxSettings
 
     home = tmp_path_factory.mktemp("flouds_s2s")
     return FloudsOnnxClient(FloudsOnnxSettings(home_dir=home))

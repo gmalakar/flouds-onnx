@@ -14,7 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))  # noqa: E402
 
-from floudsonnx import FloudsOnnxClient, FloudsOnnxSettings  # noqa: E402
+from flouds_onnx import FloudsOnnxClient, FloudsOnnxSettings  # noqa: E402
 
 MODEL = "google/flan-t5-small"
 MODEL_FOR = "s2s"

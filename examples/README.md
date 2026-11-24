@@ -1,7 +1,7 @@
 # Examples
 
 Quick-start scripts for each model type. Pulling Hugging Face models requires
-`floudsonnx[export]`; seq2seq and LLM examples also require `floudsonnx[seq2seq]`.
+`flouds-onnx[export]`; seq2seq and LLM examples also require `flouds-onnx[seq2seq]`.
 
 | Script | Model type | Model |
 |---|---|---|
@@ -13,7 +13,7 @@ Quick-start scripts for each model type. Pulling Hugging Face models requires
 ## Usage
 
 ```bash
-pip install "floudsonnx[export,seq2seq]"
+pip install "flouds-onnx[export,seq2seq]"
 ```
 
 ```bash

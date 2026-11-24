@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in contributing to floudsonnx.
+Thanks for your interest in contributing to flouds-onnx.
 
 ## Development setup
 
@@ -31,7 +31,7 @@ Or use the helper script:
 
 ```powershell
 pre-commit run --all-files          # format, lint, type-check, bandit
-pytest tests/unit/ -q --cov=floudsonnx --cov-fail-under=85   # unit tests (fast, no network)
+pytest tests/unit/ -q --cov=flouds_onnx --cov-fail-under=85   # unit tests (fast, no network)
 pytest -m integration -v            # integration tests (requires HF access)
 ```
 

@@ -13,13 +13,13 @@ from unittest.mock import patch
 
 import pytest
 
-from floudsonnx.config.settings import FloudsOnnxSettings
-from floudsonnx.exceptions import ExportError, ManifestError, ModelNameConflictError
-from floudsonnx.store.exporter_bridge import ExporterBridge
-from floudsonnx.store.manifest import MANIFEST_SCHEMA_VERSION, ModelManifest
-from floudsonnx.store.registry import ModelRegistry
+from flouds_onnx.config.settings import FloudsOnnxSettings
+from flouds_onnx.exceptions import ExportError, ManifestError, ModelNameConflictError
+from flouds_onnx.store.exporter_bridge import ExporterBridge
+from flouds_onnx.store.manifest import MANIFEST_SCHEMA_VERSION, ModelManifest
+from flouds_onnx.store.registry import ModelRegistry
 
-EXPORT = "floudsonnx.store.registry.ExporterBridge.export"
+EXPORT = "flouds_onnx.store.registry.ExporterBridge.export"
 
 
 def _exporter_writing(files=("model.onnx", "tokenizer.json")):
@@ -109,7 +109,7 @@ class TestExportLandsInTheStore:
         assert ModelRegistry(settings).exists("org/model") is False
 
     def test_a_failed_export_leaves_no_empty_folders(self, tmp_path):
-        from floudsonnx.exceptions import ExporterNotInstalledError
+        from flouds_onnx.exceptions import ExporterNotInstalledError
 
         settings = FloudsOnnxSettings(home_dir=tmp_path / "home")
         with patch(EXPORT, side_effect=ExporterNotInstalledError()):
@@ -159,7 +159,7 @@ class TestManifestIsTruthful:
         with patch(EXPORT, side_effect=_exporter_writing()):
             options = ModelRegistry(settings).pull("org/model").export_options
         assert options.optimize is False
-        assert options.opset_version is None  # the exporter chose; floudsonnx did not
+        assert options.opset_version is None  # the exporter chose; flouds-onnx did not
         assert options.optimization_level is None  # meaningless when not optimising
 
     def test_manifest_has_a_schema_version_and_older_ones_load_as_version_1(self, tmp_path):
@@ -175,7 +175,7 @@ class TestManifestIsTruthful:
 
     def test_a_failed_write_keeps_the_previous_manifest(self, tmp_path):
         ModelManifest(model_name="first", model_for="fe", folder="m").save(str(tmp_path))
-        with patch("floudsonnx.store.manifest.os.replace", side_effect=OSError("disk full")):
+        with patch("flouds_onnx.store.manifest.os.replace", side_effect=OSError("disk full")):
             with pytest.raises(ManifestError):
                 ModelManifest(model_name="second", model_for="fe", folder="m").save(str(tmp_path))
         assert ModelManifest.load(str(tmp_path)).model_name == "first"
@@ -185,7 +185,7 @@ class TestManifestIsTruthful:
 class TestRemoveTellsTheTruth:
     def test_returns_false_when_the_directory_could_not_be_deleted(self, settings):
         model_dir = _stored(settings, "org/model")
-        with patch("floudsonnx.store.registry.shutil.rmtree"):  # as when Windows holds model.onnx open
+        with patch("flouds_onnx.store.registry.shutil.rmtree"):  # as when Windows holds model.onnx open
             assert ModelRegistry(settings).remove("org/model") is False
         assert model_dir.is_dir()
 

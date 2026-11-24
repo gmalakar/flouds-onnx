@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Goutam Malakar. All rights reserved.
 # Licensed under the Apache License, Version 2.0.
 # =============================================================================
-"""floudsonnx with flouds-model-exporter 2.0: the exporter's errors become floudsonnx
+"""flouds-onnx with flouds-model-exporter 2.0: the exporter's errors become flouds-onnx
 errors, the revision reaches the exporter and the manifest, and the HTTP server answers
 each new error with its own status."""
 import os
@@ -11,9 +11,9 @@ import types
 
 import pytest
 
-from floudsonnx.config.export_options import ExportOptions
-from floudsonnx.exceptions import ExportError, ExportInProgressError, InvalidModelReferenceError, RemoteCodeRequiredError, RevisionMismatchError
-from floudsonnx.store.exporter_bridge import ExporterBridge
+from flouds_onnx.config.export_options import ExportOptions
+from flouds_onnx.exceptions import ExportError, ExportInProgressError, InvalidModelReferenceError, RemoteCodeRequiredError, RevisionMismatchError
+from flouds_onnx.store.exporter_bridge import ExporterBridge
 
 exporter_errors = pytest.importorskip("model_exporter.errors")
 
@@ -43,7 +43,7 @@ def _install_fake_exporter(monkeypatch, exc=None, seen=None):
     ],
     ids=["remote-code", "in-progress", "invalid-reference", "export-failed", "other"],
 )
-def test_exporter_errors_become_floudsonnx_errors(tmp_path, monkeypatch, make_error, expected):
+def test_exporter_errors_become_flouds_onnx_errors(tmp_path, monkeypatch, make_error, expected):
     _install_fake_exporter(monkeypatch, make_error())
     with pytest.raises(expected) as caught:
         ExporterBridge.export("org/m", str(tmp_path / "models" / "fe" / "m"), "fe", task="feature-extraction")
@@ -72,7 +72,7 @@ def test_revision_is_passed_to_the_exporter_only_when_set(tmp_path, monkeypatch)
 
 
 def test_revision_is_an_option_safe_to_accept_over_http():
-    from floudsonnx.config.export_options import SafeExportOptions
+    from flouds_onnx.config.export_options import SafeExportOptions
 
     assert SafeExportOptions(revision="abc123").revision == "abc123"
     assert ExportOptions().revision is None
@@ -86,11 +86,11 @@ def _fake_store_export(model_name, model_dir, model_for, task=None, **kwargs):
 
 
 def test_revision_is_recorded_and_a_different_revision_is_refused(tmp_path, monkeypatch):
-    from floudsonnx.config.settings import FloudsOnnxSettings
-    from floudsonnx.store.registry import ModelRegistry
+    from flouds_onnx.config.settings import FloudsOnnxSettings
+    from flouds_onnx.store.registry import ModelRegistry
 
     registry = ModelRegistry(FloudsOnnxSettings(home_dir=tmp_path))
-    monkeypatch.setattr("floudsonnx.store.registry.ExporterBridge.export", _fake_store_export)
+    monkeypatch.setattr("flouds_onnx.store.registry.ExporterBridge.export", _fake_store_export)
 
     assert registry.pull("org/m", model_for="fe", revision="abc123").hf_revision == "abc123"
     assert registry.pull("org/m", model_for="fe", revision="abc123").hf_revision == "abc123"
@@ -104,11 +104,11 @@ def test_revision_is_recorded_and_a_different_revision_is_refused(tmp_path, monk
 
 
 def test_pull_without_a_recorded_revision_refuses_a_specific_one(tmp_path, monkeypatch):
-    from floudsonnx.config.settings import FloudsOnnxSettings
-    from floudsonnx.store.registry import ModelRegistry
+    from flouds_onnx.config.settings import FloudsOnnxSettings
+    from flouds_onnx.store.registry import ModelRegistry
 
     registry = ModelRegistry(FloudsOnnxSettings(home_dir=tmp_path))
-    monkeypatch.setattr("floudsonnx.store.registry.ExporterBridge.export", _fake_store_export)
+    monkeypatch.setattr("flouds_onnx.store.registry.ExporterBridge.export", _fake_store_export)
 
     registry.pull("org/m", model_for="fe")
     with pytest.raises(RevisionMismatchError, match="no revision recorded"):
@@ -126,7 +126,7 @@ def test_pull_without_a_recorded_revision_refuses_a_specific_one(tmp_path, monke
 )
 def test_http_status_for_the_new_errors(error, status, text):
     pytest.importorskip("fastapi")
-    from floudsonnx.api.routers import models as models_router
+    from flouds_onnx.api.routers import models as models_router
 
     http = models_router._http_error(error)
     assert http.status_code == status

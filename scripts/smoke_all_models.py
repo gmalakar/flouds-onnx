@@ -9,7 +9,7 @@
 Unified manual smoke test for all model types: fe, s2s, ranker, llm.
 
 Prerequisites:
-    pip install floudsonnx[export,seq2seq]
+    pip install flouds-onnx[export,seq2seq]
     do NOT install sentence-transformers
 
 Usage:
@@ -230,7 +230,7 @@ def run_model_test(spec: ModelSpec, client: Any, no_export: bool) -> bool:  # no
         # ── 1. PULL ───────────────────────────────────────────────────────────
         if not no_export:
             section("1. pull()")
-            from floudsonnx.config.model_config import ModelConfig
+            from flouds_onnx.config.model_config import ModelConfig
 
             config = None
             if spec.use_seq2seqlm:
@@ -346,7 +346,7 @@ def run_model_test(spec: ModelSpec, client: Any, no_export: bool) -> bool:  # no
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="floudsonnx unified manual smoke test — all model types",
+        description="flouds-onnx unified manual smoke test — all model types",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
@@ -370,12 +370,12 @@ def main() -> None:
         if override:
             CATALOGUE[t].model_name = override
 
-    from floudsonnx import FloudsOnnxClient, FloudsOnnxSettings
+    from flouds_onnx import FloudsOnnxClient, FloudsOnnxSettings
 
     home = Path(args.home).expanduser()
     client = FloudsOnnxClient(FloudsOnnxSettings(home_dir=home, session_provider="CPUExecutionProvider"))
 
-    print("\nfloudsonnx unified model test")
+    print("\nflouds-onnx unified model test")
     print(f"  store : {home}")
     print(f"  types : {args.types}")
 

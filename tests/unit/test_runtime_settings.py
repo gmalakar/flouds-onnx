@@ -11,28 +11,28 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from floudsonnx.config.model_config import ModelConfig
-from floudsonnx.config.settings import FloudsOnnxSettings
-from floudsonnx.exceptions import ModelLoadError, TokenizerError
-from floudsonnx.runtime.loader import ModelLoader
-from floudsonnx.runtime.ort_session import OrtInferenceSessionLoader, build_session_options, resolve_provider
-from floudsonnx.runtime.session_pool import SessionPool
-from floudsonnx.runtime.tokenizer_cache import TokenizerCache
+from flouds_onnx.config.model_config import ModelConfig
+from flouds_onnx.config.settings import FloudsOnnxSettings
+from flouds_onnx.exceptions import ModelLoadError, TokenizerError
+from flouds_onnx.runtime.loader import ModelLoader
+from flouds_onnx.runtime.ort_session import OrtInferenceSessionLoader, build_session_options, resolve_provider
+from flouds_onnx.runtime.session_pool import SessionPool
+from flouds_onnx.runtime.tokenizer_cache import TokenizerCache
 
 
 class TestSettingsFromEnvironment:
     def test_reads_every_supported_variable(self, tmp_path):
         env = {
-            "FLOUDSONNX_HOME_DIR": str(tmp_path / "home"),
-            "FLOUDSONNX_ONNX_PATH": str(tmp_path / "store"),
-            "FLOUDSONNX_SESSION_PROVIDER": "CUDAExecutionProvider",
-            "FLOUDSONNX_STRICT_PROVIDER": "true",
-            "FLOUDSONNX_INTRA_OP_THREADS": "4",
-            "FLOUDSONNX_INTER_OP_THREADS": "1",
-            "FLOUDSONNX_ENCODER_CACHE_MAX": "9",
-            "FLOUDSONNX_SEQ2SEQ_CACHE_MAX": "2",
-            "FLOUDSONNX_TOKENIZER_CACHE_MAX": "7",
-            "FLOUDSONNX_ALLOW_HUB_TOKENIZER_FALLBACK": "1",
+            "FLOUDS_ONNX_HOME_DIR": str(tmp_path / "home"),
+            "FLOUDS_ONNX_ONNX_PATH": str(tmp_path / "store"),
+            "FLOUDS_ONNX_SESSION_PROVIDER": "CUDAExecutionProvider",
+            "FLOUDS_ONNX_STRICT_PROVIDER": "true",
+            "FLOUDS_ONNX_INTRA_OP_THREADS": "4",
+            "FLOUDS_ONNX_INTER_OP_THREADS": "1",
+            "FLOUDS_ONNX_ENCODER_CACHE_MAX": "9",
+            "FLOUDS_ONNX_SEQ2SEQ_CACHE_MAX": "2",
+            "FLOUDS_ONNX_TOKENIZER_CACHE_MAX": "7",
+            "FLOUDS_ONNX_ALLOW_HUB_TOKENIZER_FALLBACK": "1",
         }
         s = FloudsOnnxSettings.from_env(env)
         assert s.models_root == tmp_path / "store"
@@ -43,23 +43,23 @@ class TestSettingsFromEnvironment:
 
     def test_unset_and_empty_variables_keep_defaults_and_overrides_win(self):
         defaults = FloudsOnnxSettings()
-        s = FloudsOnnxSettings.from_env({"FLOUDSONNX_SESSION_PROVIDER": "  ", "FLOUDSONNX_ENCODER_CACHE_MAX": "9"}, encoder_cache_max=2)
+        s = FloudsOnnxSettings.from_env({"FLOUDS_ONNX_SESSION_PROVIDER": "  ", "FLOUDS_ONNX_ENCODER_CACHE_MAX": "9"}, encoder_cache_max=2)
         assert s.session_provider == defaults.session_provider
         assert s.encoder_cache_max == 2
         assert s.strict_provider is False and s.allow_hub_tokenizer_fallback is False
         assert s.intra_op_num_threads is None
 
     @pytest.mark.parametrize(
-        "env", [{"FLOUDSONNX_INTRA_OP_THREADS": "0"}, {"FLOUDSONNX_ENCODER_CACHE_MAX": "0"}, {"FLOUDSONNX_INTER_OP_THREADS": "many"}]
+        "env", [{"FLOUDS_ONNX_INTRA_OP_THREADS": "0"}, {"FLOUDS_ONNX_ENCODER_CACHE_MAX": "0"}, {"FLOUDS_ONNX_INTER_OP_THREADS": "many"}]
     )
     def test_invalid_values_are_rejected(self, env):
         with pytest.raises(ValueError):
             FloudsOnnxSettings.from_env(env)
 
     def test_default_client_uses_the_environment(self, tmp_path, monkeypatch):
-        from floudsonnx.api import client as client_module
+        from flouds_onnx.api import client as client_module
 
-        monkeypatch.setenv("FLOUDSONNX_HOME_DIR", str(tmp_path / "from-env"))
+        monkeypatch.setenv("FLOUDS_ONNX_HOME_DIR", str(tmp_path / "from-env"))
         monkeypatch.setattr(client_module, "_default_client", None)
         assert client_module.get_default_client().settings.home_dir == tmp_path / "from-env"
         monkeypatch.setattr(client_module, "_default_client", None)
@@ -75,23 +75,23 @@ class TestSessionOptionsAndProviders:
 
     def test_loader_passes_thread_limits_to_the_session(self, tmp_path):
         (tmp_path / "model.onnx").write_text("x")
-        with patch("floudsonnx.runtime.ort_session.ort.InferenceSession") as session:
+        with patch("flouds_onnx.runtime.ort_session.ort.InferenceSession") as session:
             OrtInferenceSessionLoader.load(str(tmp_path), ModelConfig(model_name="m"), intra_op_num_threads=3)
         assert session.call_args.kwargs["sess_options"].intra_op_num_threads == 3
 
     def test_settings_reach_the_session_loader(self, tmp_path):
         settings = FloudsOnnxSettings(home_dir=tmp_path, intra_op_num_threads=2, inter_op_num_threads=1, strict_provider=True)
         loader = ModelLoader(settings)
-        with patch("floudsonnx.runtime.session_pool.OrtInferenceSessionLoader.load", return_value=MagicMock()) as load:
+        with patch("flouds_onnx.runtime.session_pool.OrtInferenceSessionLoader.load", return_value=MagicMock()) as load:
             loader._pool.get_or_load_encoder(str(tmp_path / "m"), ModelConfig(model_name="m"))
         assert load.call_args.kwargs == {"strict_provider": True, "intra_op_num_threads": 2, "inter_op_num_threads": 1}
 
     def test_unavailable_provider_falls_back_to_cpu_by_default(self):
-        with patch("floudsonnx.runtime.ort_session.ort.get_available_providers", return_value=["CPUExecutionProvider"]):
+        with patch("flouds_onnx.runtime.ort_session.ort.get_available_providers", return_value=["CPUExecutionProvider"]):
             assert resolve_provider("CUDAExecutionProvider") == "CPUExecutionProvider"
 
     def test_unavailable_provider_is_an_error_when_strict(self):
-        with patch("floudsonnx.runtime.ort_session.ort.get_available_providers", return_value=["CPUExecutionProvider"]):
+        with patch("flouds_onnx.runtime.ort_session.ort.get_available_providers", return_value=["CPUExecutionProvider"]):
             with pytest.raises(ModelLoadError, match="CUDAExecutionProvider"):
                 resolve_provider("CUDAExecutionProvider", strict=True)
 
@@ -99,7 +99,7 @@ class TestSessionOptionsAndProviders:
         optimum = pytest.importorskip("optimum.onnxruntime")
         with (
             patch.object(optimum.ORTModelForSeq2SeqLM, "from_pretrained", return_value=MagicMock()) as from_pretrained,
-            patch("floudsonnx.runtime.ort_session.ort.get_available_providers", return_value=["CPUExecutionProvider", "CUDAExecutionProvider"]),
+            patch("flouds_onnx.runtime.ort_session.ort.get_available_providers", return_value=["CPUExecutionProvider", "CUDAExecutionProvider"]),
         ):
             pool = SessionPool()
             pool.get_or_load_seq2seq(str(tmp_path), ModelConfig(model_name="t5", model_for="s2s"), "CUDAExecutionProvider")

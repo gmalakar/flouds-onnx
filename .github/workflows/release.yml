@@ -63,7 +63,7 @@ jobs:
           import pathlib
           import re
 
-          text = pathlib.Path("src/floudsonnx/__init__.py").read_text(encoding="utf-8")
+          text = pathlib.Path("src/flouds_onnx/__init__.py").read_text(encoding="utf-8")
           match = re.search(r'__version__\s*=\s*"([^"]+)"', text)
           print(match.group(1) if match else "")
           PY
@@ -107,9 +107,9 @@ jobs:
       - name: Lint, type check and unit tests
         run: |
           flake8 src/ tests/
-          mypy src/floudsonnx
+          mypy src/flouds_onnx
           bandit -r src -ll
-          pytest tests/unit/ -q --cov=floudsonnx --cov-fail-under=85
+          pytest tests/unit/ -q --cov=flouds_onnx --cov-fail-under=85
 
   build:
     runs-on: ubuntu-latest

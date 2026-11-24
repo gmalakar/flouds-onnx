@@ -10,13 +10,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from floudsonnx.api.client import FloudsOnnxClient
-from floudsonnx.cli import main as cli
-from floudsonnx.config.export_options import ExportOptions, SafeExportOptions
-from floudsonnx.store.exporter_bridge import ExporterBridge
-from floudsonnx.store.registry import ModelRegistry
+from flouds_onnx.api.client import FloudsOnnxClient
+from flouds_onnx.cli import main as cli
+from flouds_onnx.config.export_options import ExportOptions, SafeExportOptions
+from flouds_onnx.store.exporter_bridge import ExporterBridge
+from flouds_onnx.store.registry import ModelRegistry
 
-EXPORT = "floudsonnx.store.registry.ExporterBridge.export"
+EXPORT = "flouds_onnx.store.registry.ExporterBridge.export"
 
 
 class TestExportOptions:
@@ -88,7 +88,7 @@ class TestEveryEntryPointUsesTheSameOptions:
         def run_cli(client):
             monkeypatch.setattr(cli, "_client", lambda: client)
             monkeypatch.delenv("HUGGINGFACE_HUB_TOKEN", raising=False)
-            argv = ["floudsonnx", "pull", "org/model", "--task", "feature-extraction", "--opset-version", "14", "--library", "transformers"]
+            argv = ["flouds-onnx", "pull", "org/model", "--task", "feature-extraction", "--opset-version", "14", "--library", "transformers"]
             monkeypatch.setattr(sys, "argv", argv + ["--normalize-embeddings", "--merge"])
             with pytest.raises(SystemExit):
                 cli.main()

@@ -11,11 +11,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from floudsonnx.runtime.strategy import SessionStrategy
+from flouds_onnx.runtime.strategy import SessionStrategy
 
 pytest.importorskip("fastapi")
 
-from floudsonnx.api.routers import models  # noqa: E402
+from flouds_onnx.api.routers import models  # noqa: E402
 
 
 class TestModelsRouter:

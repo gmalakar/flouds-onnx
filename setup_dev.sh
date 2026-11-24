@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# setup_dev.sh — One-shot dev environment setup for floudsonnx (Linux/macOS)
+# setup_dev.sh — One-shot dev environment setup for flouds-onnx (Linux/macOS)
 # Run from the repo root: ./setup_dev.sh
 # =============================================================================
 set -euo pipefail
@@ -8,7 +8,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo ""
-echo "=== floudsonnx dev setup ==="
+echo "=== flouds-onnx dev setup ==="
 
 # 1. Create venv if missing
 if [ ! -d "$ROOT/.venv" ]; then
@@ -26,7 +26,7 @@ pip install --upgrade pip --quiet
 
 # 4. Install deps
 echo "Installing dependencies..."
-# Editable, so scripts and the floudsonnx command use this working copy.
+# Editable, so scripts and the flouds-onnx command use this working copy.
 pip install -e "$ROOT[dev,export,seq2seq,server]" --quiet
 
 # 5. Install pre-commit hooks

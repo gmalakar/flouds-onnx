@@ -6,11 +6,11 @@ from unittest.mock import patch
 
 import pytest
 
-from floudsonnx.config.model_config import ModelConfig
-from floudsonnx.exceptions import ModelNotFoundError
-from floudsonnx.runtime.loader import LoadedModel, ModelLoader
-from floudsonnx.runtime.strategy import SessionStrategy
-from floudsonnx.store.manifest import ModelManifest
+from flouds_onnx.config.model_config import ModelConfig
+from flouds_onnx.exceptions import ModelNotFoundError
+from flouds_onnx.runtime.loader import LoadedModel, ModelLoader
+from flouds_onnx.runtime.strategy import SessionStrategy
+from flouds_onnx.store.manifest import ModelManifest
 
 
 def _manifest(model_name="test/model", model_for="fe", strategy="ort_inference_session"):

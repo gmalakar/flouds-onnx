@@ -6,9 +6,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from floudsonnx.config.model_config import ModelConfig
-from floudsonnx.exceptions import ModelLoadError
-from floudsonnx.runtime.ort_session import OrtInferenceSessionLoader
+from flouds_onnx.config.model_config import ModelConfig
+from flouds_onnx.exceptions import ModelLoadError
+from flouds_onnx.runtime.ort_session import OrtInferenceSessionLoader
 
 
 @pytest.fixture()

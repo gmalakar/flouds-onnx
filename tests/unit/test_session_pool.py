@@ -7,8 +7,8 @@ from unittest.mock import patch
 
 import pytest
 
-from floudsonnx.config.model_config import ModelConfig
-from floudsonnx.runtime.session_pool import SessionPool
+from flouds_onnx.config.model_config import ModelConfig
+from flouds_onnx.runtime.session_pool import SessionPool
 
 
 @pytest.fixture()
@@ -25,7 +25,7 @@ def pool():
 class TestSessionPool:
     def test_encoder_cache_hit(self, pool, model_dir, mock_ort_session):
         cfg = ModelConfig(model_name="x", model_for="fe")
-        with patch("floudsonnx.runtime.session_pool.OrtInferenceSessionLoader.load", return_value=mock_ort_session):
+        with patch("flouds_onnx.runtime.session_pool.OrtInferenceSessionLoader.load", return_value=mock_ort_session):
             s1 = pool.get_or_load_encoder(model_dir, cfg)
             s2 = pool.get_or_load_encoder(model_dir, cfg)
         assert s1 is s2
@@ -39,7 +39,7 @@ class TestSessionPool:
             return mock_ort_session
 
         results = []
-        with patch("floudsonnx.runtime.session_pool.OrtInferenceSessionLoader.load", side_effect=_load):
+        with patch("flouds_onnx.runtime.session_pool.OrtInferenceSessionLoader.load", side_effect=_load):
 
             def worker():
                 results.append(pool.get_or_load_encoder(model_dir, cfg))
@@ -55,7 +55,7 @@ class TestSessionPool:
 
     def test_evict_removes_entries(self, pool, model_dir, mock_ort_session):
         cfg = ModelConfig(model_name="x", model_for="fe")
-        with patch("floudsonnx.runtime.session_pool.OrtInferenceSessionLoader.load", return_value=mock_ort_session):
+        with patch("flouds_onnx.runtime.session_pool.OrtInferenceSessionLoader.load", return_value=mock_ort_session):
             pool.get_or_load_encoder(model_dir, cfg, "CPUExecutionProvider")
         assert pool.evict(model_dir) >= 1
 

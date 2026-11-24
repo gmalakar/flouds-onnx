@@ -26,7 +26,7 @@ The release workflow validates that:
 
 - The tag is semantic version format: `vX.Y.Z`
 - The tag matches `project.version` in `pyproject.toml`
-- `pyproject.toml` matches `src/floudsonnx/__init__.py`
+- `pyproject.toml` matches `src/flouds_onnx/__init__.py`
 - Lint, type checks, Bandit and the unit tests pass (with the coverage floor)
 - The package builds successfully
 - `twine check dist/*` passes
@@ -36,7 +36,7 @@ The release workflow validates that:
 In PyPI, add a trusted publisher with:
 
 - Owner: `gmalakar`
-- Repository name: `floudsonnx`
+- Repository name: `flouds-onnx`
 - Workflow filename: `release.yml`
 - Environment name: `flouds_by_goutam`
 

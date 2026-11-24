@@ -9,8 +9,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from floudsonnx.exceptions import ExporterNotInstalledError, ExportError
-from floudsonnx.store.exporter_bridge import ExporterBridge
+from flouds_onnx.exceptions import ExporterNotInstalledError, ExportError
+from flouds_onnx.store.exporter_bridge import ExporterBridge
 
 
 class TestExporterBridge:

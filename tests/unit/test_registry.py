@@ -4,8 +4,8 @@
 # =============================================================================
 from unittest.mock import patch
 
-from floudsonnx.store.manifest import ModelManifest
-from floudsonnx.store.registry import ModelRegistry
+from flouds_onnx.store.manifest import ModelManifest
+from flouds_onnx.store.registry import ModelRegistry
 
 
 def _fake_scan(self, model_dir):
@@ -20,7 +20,7 @@ class TestModelRegistry:
     def test_pull_calls_exporter_when_missing(self, settings):
         reg = ModelRegistry(settings)
         with (
-            patch("floudsonnx.store.registry.ExporterBridge.export", return_value="/fake") as mock_exp,
+            patch("flouds_onnx.store.registry.ExporterBridge.export", return_value="/fake") as mock_exp,
             patch.object(ModelManifest, "scan_onnx_files", _fake_scan),
         ):
             reg.pull("test/model", model_for="fe", task="feature-extraction")
@@ -41,7 +41,7 @@ class TestModelRegistry:
             return model_dir
 
         with (
-            patch("floudsonnx.store.registry.ExporterBridge.export", side_effect=fake_export),
+            patch("flouds_onnx.store.registry.ExporterBridge.export", side_effect=fake_export),
             patch.object(ModelManifest, "scan_onnx_files", _fake_scan),
         ):
             reg.pull("test/model", model_for="fe")
@@ -54,7 +54,7 @@ class TestModelRegistry:
         d = settings.models_root / "fe" / "model"
         d.mkdir(parents=True)
         ModelManifest(model_name="test/model", model_for="fe", folder="model").save(str(d))
-        with patch("floudsonnx.store.registry.ExporterBridge.export") as mock_exp:
+        with patch("flouds_onnx.store.registry.ExporterBridge.export") as mock_exp:
             reg.pull("test/model", model_for="fe")
         mock_exp.assert_not_called()
 
@@ -64,7 +64,7 @@ class TestModelRegistry:
         d.mkdir(parents=True)
         ModelManifest(model_name="test/model", model_for="fe", folder="model").save(str(d))
         with (
-            patch("floudsonnx.store.registry.ExporterBridge.export", return_value=str(d)) as mock_exp,
+            patch("flouds_onnx.store.registry.ExporterBridge.export", return_value=str(d)) as mock_exp,
             patch.object(ModelManifest, "scan_onnx_files", _fake_scan),
         ):
             reg.pull("test/model", model_for="fe", force=True)
@@ -83,7 +83,7 @@ class TestModelRegistry:
             return kw["model_dir"]
 
         with (
-            patch("floudsonnx.store.registry.ExporterBridge.export", side_effect=fake_export),
+            patch("flouds_onnx.store.registry.ExporterBridge.export", side_effect=fake_export),
             patch.object(ModelManifest, "scan_onnx_files", _fake_scan),
         ):
             reg.pull("test/model", model_for="fe", hf_token="hf_test_token")
@@ -134,7 +134,7 @@ class TestModelRegistry:
         # Patch once, around all the threads. Entering and leaving the same patch from
         # several threads at once can leave the mock installed for every later test.
         with (
-            patch("floudsonnx.store.registry.ExporterBridge.export", side_effect=fake_export),
+            patch("flouds_onnx.store.registry.ExporterBridge.export", side_effect=fake_export),
             patch.object(ModelManifest, "scan_onnx_files", _fake_scan),
         ):
             threads = [threading.Thread(target=do_pull) for _ in range(4)]

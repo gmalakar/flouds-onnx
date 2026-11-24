@@ -4,7 +4,7 @@
 # =============================================================================
 import pytest
 
-from floudsonnx.utils.path_guard import safe_join, safe_model_folder
+from flouds_onnx.utils.path_guard import safe_join, safe_model_folder
 
 
 class TestSafeModelFolder:

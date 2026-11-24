@@ -1,9 +1,9 @@
-# floudsonnx
+# flouds-onnx
 
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 
-`floudsonnx` is a small ONNX model store and runtime for Python. It can pull
+`flouds-onnx` is a small ONNX model store and runtime for Python. It can pull
 Hugging Face models into a local ONNX store, cache runtime sessions, and load
 models as either `onnxruntime.InferenceSession` or Optimum
 `ORTModelForSeq2SeqLM` objects.
@@ -11,20 +11,24 @@ models as either `onnxruntime.InferenceSession` or Optimum
 The package is designed for applications that want an Ollama-like local model
 store, but for ONNX artifacts.
 
+> **Renamed from `floudsonnx`.** From 2.0.0 the project is published as
+> `flouds-onnx`. The old `floudsonnx` package stays on PyPI at 1.0.0 and receives no
+> further releases. See [Moving from floudsonnx](#moving-from-floudsonnx).
+
 ## Important: Hugging Face Models Must Be Converted To ONNX
 
-`floudsonnx` runs ONNX models. Hugging Face models must be exported to ONNX
+`flouds-onnx` runs ONNX models. Hugging Face models must be exported to ONNX
 before they can be loaded as runtime sessions.
 
-Install the `export` extra when you want `floudsonnx` to convert Hugging Face
+Install the `export` extra when you want `flouds-onnx` to convert Hugging Face
 models automatically:
 
 ```bash
-pip install "floudsonnx[export]"
+pip install "flouds-onnx[export]"
 ```
 
 That extra installs `flouds-model-exporter`, which is required for converting
-Hugging Face models to ONNX. Without it, `floudsonnx` can still load models
+Hugging Face models to ONNX. Without it, `flouds-onnx` can still load models
 that already exist in the local ONNX store, but it cannot pull/export new
 Hugging Face models.
 
@@ -41,12 +45,33 @@ pull/export.
 You can also pass a token per call:
 
 ```python
-from floudsonnx import pull
+from flouds_onnx import pull
 
 pull("org/private-model", model_for="fe", hf_token="hf_xxx_your_token")
 ```
 
 Never commit real Hugging Face tokens to source control.
+
+## Moving from floudsonnx
+
+Everything that carried the old name changed in 2.0.0:
+
+| What | 1.x (`floudsonnx`) | 2.x (`flouds-onnx`) |
+|---|---|---|
+| Install | `pip install floudsonnx[export]` | `pip install "flouds-onnx[export]"` |
+| Import | `import floudsonnx` | `import flouds_onnx` |
+| Command | `floudsonnx pull ...` | `flouds-onnx pull ...` |
+| Environment variables | `FLOUDSONNX_HOME_DIR`, `FLOUDSONNX_API_TOKEN`, ... | `FLOUDS_ONNX_HOME_DIR`, `FLOUDS_ONNX_API_TOKEN`, ... |
+| Health check `service` field | `floudsonnx` | `flouds-onnx` |
+| Repository | `github.com/gmalakar/floudsonnx` | `github.com/gmalakar/flouds-onnx` |
+
+Class names (`FloudsOnnxClient`, `FloudsOnnxSettings`, `FloudsOnnxError`) and the
+store location (`~/.flouds/models`) are unchanged, so models already in the store
+are found without re-exporting. Uninstall the old package first
+(`pip uninstall floudsonnx`); the two can be installed side by side but must not be
+mixed. The old `FLOUDSONNX_*` variables are no longer read.
+
+The 2.0.0 release has further breaking changes; see `CHANGELOG.md`.
 
 ## Features
 
@@ -62,20 +87,20 @@ Never commit real Hugging Face tokens to source control.
 
 ## Installation
 
-`floudsonnx` supports Python `3.11` and `3.12`.
+`flouds-onnx` supports Python `3.11` and `3.12`.
 
 ```bash
-pip install floudsonnx
+pip install flouds-onnx
 ```
 
 The core install loads models that are already exported to ONNX. Install extras
 for export, seq2seq, or server support:
 
 ```bash
-pip install "floudsonnx[export]"          # auto-export via flouds-model-exporter
-pip install "floudsonnx[seq2seq]"         # Optimum ORTModelForSeq2SeqLM support
-pip install "floudsonnx[server]"          # FastAPI + Uvicorn HTTP server
-pip install "floudsonnx[all]"             # export + seq2seq + server
+pip install "flouds-onnx[export]"          # auto-export via flouds-model-exporter
+pip install "flouds-onnx[seq2seq]"         # Optimum ORTModelForSeq2SeqLM support
+pip install "flouds-onnx[server]"          # FastAPI + Uvicorn HTTP server
+pip install "flouds-onnx[all]"             # export + seq2seq + server
 ```
 
 Core dependencies:
@@ -87,7 +112,7 @@ Core dependencies:
 
 Optional extras:
 
-- `export`: `flouds-model-exporter>=2.0.0,<3`
+- `export`: `flouds-model-exporter>=2.0.1,<3`
 - `seq2seq`: `optimum[onnxruntime]`
 - `server`: `fastapi`, `uvicorn[standard]`
 
@@ -97,18 +122,18 @@ exporter.
 
 ### Store Location And `ONNX_PATH`
 
-`floudsonnx` stores models under `~/.flouds/models` by default. Override the
+`flouds-onnx` stores models under `~/.flouds/models` by default. Override the
 store root with `FloudsOnnxSettings`:
 
 ```python
-from floudsonnx import FloudsOnnxClient, FloudsOnnxSettings
+from flouds_onnx import FloudsOnnxClient, FloudsOnnxSettings
 
 client = FloudsOnnxClient(
     FloudsOnnxSettings(onnx_path="/path/to/onnx/models")
 )
 ```
 
-The store folder can have any name. `floudsonnx` passes the store root to
+The store folder can have any name. `flouds-onnx` passes the store root to
 `flouds-model-exporter` as an argument (the `ONNX_PATH` variable is not used or
 changed), and afterwards makes sure the exported files are in the selected store.
 A pull that produces no ONNX files fails with `ExportError` instead of recording a
@@ -154,7 +179,7 @@ inference.
 ```python
 import numpy as np
 
-from floudsonnx import create_model
+from flouds_onnx import create_model
 
 model = create_model(
     "sentence-transformers/all-MiniLM-L6-v2",
@@ -194,7 +219,7 @@ Seq2seq loading requires the `seq2seq` extra. Pulling from Hugging Face also
 requires the `export` extra.
 
 ```python
-from floudsonnx import create_model
+from flouds_onnx import create_model
 
 model = create_model("t5-small", model_for="s2s", task="seq2seq-lm")
 
@@ -228,7 +253,7 @@ print(model.tokenizer.decode(tokens[0], skip_special_tokens=True))
 Top-level convenience functions:
 
 ```python
-from floudsonnx import (
+from flouds_onnx import (
     create_model,
     list_models,
     load_model,
@@ -250,7 +275,7 @@ Available top-level functions:
 For explicit settings and cache control, use `FloudsOnnxClient`:
 
 ```python
-from floudsonnx import FloudsOnnxClient, FloudsOnnxSettings
+from flouds_onnx import FloudsOnnxClient, FloudsOnnxSettings
 
 settings = FloudsOnnxSettings(
     home_dir="/data/flouds",
@@ -291,7 +316,7 @@ Export options can be passed as keyword arguments, as shown above, or as one
 `ExportOptions` object that you build once and reuse:
 
 ```python
-from floudsonnx import ExportOptions, pull
+from flouds_onnx import ExportOptions, pull
 
 options = ExportOptions(task="feature-extraction", library="transformers", normalize_embeddings=True)
 pull("sentence-transformers/all-MiniLM-L6-v2", model_for="fe", options=options)
@@ -323,38 +348,38 @@ For seq2seq models, call `model.seq2seq_model.generate(...)`.
 ## CLI
 
 ```bash
-floudsonnx --help
+flouds-onnx --help
 ```
 
 Commands:
 
 ```bash
 # Pull/export a model to the local store
-floudsonnx pull sentence-transformers/all-MiniLM-L6-v2 --for fe --task feature-extraction
+flouds-onnx pull sentence-transformers/all-MiniLM-L6-v2 --for fe --task feature-extraction
 
 # Disable ONNX optimization during pull
-floudsonnx pull t5-small --for s2s --task seq2seq-lm --no-optimize
+flouds-onnx pull t5-small --for s2s --task seq2seq-lm --no-optimize
 
 # List locally stored models
-floudsonnx list
+flouds-onnx list
 
 # Show manifest JSON
-floudsonnx info sentence-transformers/all-MiniLM-L6-v2 --for fe
+flouds-onnx info sentence-transformers/all-MiniLM-L6-v2 --for fe
 
 # Remove from local store (exit code 1 if it was not there or could not be deleted)
-floudsonnx remove sentence-transformers/all-MiniLM-L6-v2 --for fe
+flouds-onnx remove sentence-transformers/all-MiniLM-L6-v2 --for fe
 
 # Print the installed version
-floudsonnx --version
+flouds-onnx --version
 
 # Evict and reload from disk
-floudsonnx reload sentence-transformers/all-MiniLM-L6-v2 --for fe
+flouds-onnx reload sentence-transformers/all-MiniLM-L6-v2 --for fe
 
 # Show session cache stats
-floudsonnx stats
+flouds-onnx stats
 
 # Start the optional HTTP server
-floudsonnx serve --host 127.0.0.1 --port 19720
+flouds-onnx serve --host 127.0.0.1 --port 19720
 ```
 
 Current `pull` CLI options:
@@ -381,7 +406,7 @@ Current `pull` CLI options:
 Example:
 
 ```bash
-floudsonnx pull sentence-transformers/all-MiniLM-L6-v2 \
+flouds-onnx pull sentence-transformers/all-MiniLM-L6-v2 \
   --for fe \
   --task feature-extraction \
   --library transformers \
@@ -393,13 +418,13 @@ floudsonnx pull sentence-transformers/all-MiniLM-L6-v2 \
 Install the server extra:
 
 ```bash
-pip install "floudsonnx[server]"
+pip install "flouds-onnx[server]"
 ```
 
 Start the server:
 
 ```bash
-floudsonnx serve --host 127.0.0.1 --port 19720
+flouds-onnx serve --host 127.0.0.1 --port 19720
 ```
 
 ### Access control
@@ -409,22 +434,22 @@ disk, so every route except `/health` is protected.
 
 | Mode | When | Who is served |
 |---|---|---|
-| Local | `FLOUDSONNX_API_TOKEN` is not set | Only requests from this machine: the connection must be from a loopback address and the `Host` header must be `localhost`, `127.0.0.1` or `::1`. |
-| Token | `FLOUDSONNX_API_TOKEN` is set | Any client that sends `Authorization: Bearer <token>`. |
+| Local | `FLOUDS_ONNX_API_TOKEN` is not set | Only requests from this machine: the connection must be from a loopback address and the `Host` header must be `localhost`, `127.0.0.1` or `::1`. |
+| Token | `FLOUDS_ONNX_API_TOKEN` is set | Any client that sends `Authorization: Bearer <token>`. |
 
 The server refuses to start on a non-loopback address (for example `--host 0.0.0.0`)
 unless a token is set:
 
 ```bash
-export FLOUDSONNX_API_TOKEN="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
-floudsonnx serve --host 0.0.0.0 --port 19720
+export FLOUDS_ONNX_API_TOKEN="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+flouds-onnx serve --host 0.0.0.0 --port 19720
 
-curl -H "Authorization: Bearer $FLOUDSONNX_API_TOKEN" http://server:19720/api/v1/models
+curl -H "Authorization: Bearer $FLOUDS_ONNX_API_TOKEN" http://server:19720/api/v1/models
 ```
 
 Requests made by a web page (those with an `Origin` header) are refused unless the
 origin is the server itself or is listed, comma-separated, in
-`FLOUDSONNX_ALLOWED_ORIGINS`. Behind a reverse proxy every request arrives from the
+`FLOUDS_ONNX_ALLOWED_ORIGINS`. Behind a reverse proxy every request arrives from the
 proxy's address, so set a token; local mode cannot tell proxied callers apart.
 
 The server does not use TLS. Put it behind a proxy that does if the token travels over
@@ -500,7 +525,7 @@ Errors:
 | `409` | Another process is exporting the same model, a different model already uses the store folder, or the stored export is from a different revision. |
 | `422` | The request body has a missing, wrong or unknown field, or the model needs `trust_remote_code` (pull it with the Python API or the CLI). |
 | `500` | The operation failed. The response names the error type only; details are in the server log. |
-| `501` | An optional package (`floudsonnx[export]` or `floudsonnx[seq2seq]`) is not installed on the server. |
+| `501` | An optional package (`flouds-onnx[export]` or `flouds-onnx[seq2seq]`) is not installed on the server. |
 
 Load/reload/unload request body:
 
@@ -513,10 +538,10 @@ Load/reload/unload request body:
 
 ## Configuration
 
-Configure `floudsonnx` with `FloudsOnnxSettings` when creating a client:
+Configure `flouds-onnx` with `FloudsOnnxSettings` when creating a client:
 
 ```python
-from floudsonnx import FloudsOnnxClient, FloudsOnnxSettings
+from flouds_onnx import FloudsOnnxClient, FloudsOnnxSettings
 
 client = FloudsOnnxClient(
     FloudsOnnxSettings(
@@ -533,16 +558,16 @@ client = FloudsOnnxClient(
 
 | Setting | Default | Environment variable | Description |
 |---|---|---|---|
-| `home_dir` | `~/.flouds` | `FLOUDSONNX_HOME_DIR` | Base directory; models go in `<home_dir>/models` unless `onnx_path` is set. |
-| `onnx_path` | unset | `FLOUDSONNX_ONNX_PATH` | Model store root, any folder name. |
-| `session_provider` | `CPUExecutionProvider` | `FLOUDSONNX_SESSION_PROVIDER` | ONNX Runtime execution provider, used for encoder and seq2seq models. |
-| `strict_provider` | `False` | `FLOUDSONNX_STRICT_PROVIDER` | Fail when the provider is unavailable instead of falling back to CPU. Set this in GPU deployments. |
-| `intra_op_num_threads` | ONNX Runtime default | `FLOUDSONNX_INTRA_OP_THREADS` | Threads used inside one operator, per session. |
-| `inter_op_num_threads` | ONNX Runtime default | `FLOUDSONNX_INTER_OP_THREADS` | Threads used across operators, per session. |
-| `encoder_cache_max` | `5` | `FLOUDSONNX_ENCODER_CACHE_MAX` | Encoder sessions kept in memory. |
-| `seq2seq_cache_max` | `3` | `FLOUDSONNX_SEQ2SEQ_CACHE_MAX` | Seq2seq models kept in memory. |
-| `tokenizer_cache_max` | `16` | `FLOUDSONNX_TOKENIZER_CACHE_MAX` | Tokenizers kept per thread. |
-| `allow_hub_tokenizer_fallback` | `False` | `FLOUDSONNX_ALLOW_HUB_TOKENIZER_FALLBACK` | Let a failed local tokenizer load download a known replacement from the Hugging Face Hub. |
+| `home_dir` | `~/.flouds` | `FLOUDS_ONNX_HOME_DIR` | Base directory; models go in `<home_dir>/models` unless `onnx_path` is set. |
+| `onnx_path` | unset | `FLOUDS_ONNX_ONNX_PATH` | Model store root, any folder name. |
+| `session_provider` | `CPUExecutionProvider` | `FLOUDS_ONNX_SESSION_PROVIDER` | ONNX Runtime execution provider, used for encoder and seq2seq models. |
+| `strict_provider` | `False` | `FLOUDS_ONNX_STRICT_PROVIDER` | Fail when the provider is unavailable instead of falling back to CPU. Set this in GPU deployments. |
+| `intra_op_num_threads` | ONNX Runtime default | `FLOUDS_ONNX_INTRA_OP_THREADS` | Threads used inside one operator, per session. |
+| `inter_op_num_threads` | ONNX Runtime default | `FLOUDS_ONNX_INTER_OP_THREADS` | Threads used across operators, per session. |
+| `encoder_cache_max` | `5` | `FLOUDS_ONNX_ENCODER_CACHE_MAX` | Encoder sessions kept in memory. |
+| `seq2seq_cache_max` | `3` | `FLOUDS_ONNX_SEQ2SEQ_CACHE_MAX` | Seq2seq models kept in memory. |
+| `tokenizer_cache_max` | `16` | `FLOUDS_ONNX_TOKENIZER_CACHE_MAX` | Tokenizers kept per thread. |
+| `allow_hub_tokenizer_fallback` | `False` | `FLOUDS_ONNX_ALLOW_HUB_TOKENIZER_FALLBACK` | Let a failed local tokenizer load download a known replacement from the Hugging Face Hub. |
 
 The environment variables are read by `FloudsOnnxSettings.from_env()`. The
 top-level helpers (`create_model()`, `pull()`, ...), the CLI and the HTTP server
@@ -574,9 +599,9 @@ Other variables:
 | Environment variable | Used by | Description |
 |---|---|---|
 | `HUGGINGFACE_HUB_TOKEN` | Hugging Face Hub / `flouds-model-exporter` | Token for private or gated Hugging Face models. Read by the CLI and the HTTP server. |
-| `FLOUDSONNX_API_TOKEN` | HTTP server | Bearer token required on every route except the health checks. |
-| `FLOUDSONNX_ALLOWED_ORIGINS` | HTTP server | Comma-separated web origins allowed to call the server. |
-| `ONNX_PATH` | `flouds-model-exporter` | Native exporter output root, used only when you run `flouds-export` yourself. `floudsonnx` ignores it; configure the store with `FloudsOnnxSettings`. |
+| `FLOUDS_ONNX_API_TOKEN` | HTTP server | Bearer token required on every route except the health checks. |
+| `FLOUDS_ONNX_ALLOWED_ORIGINS` | HTTP server | Comma-separated web origins allowed to call the server. |
+| `ONNX_PATH` | `flouds-model-exporter` | Native exporter output root, used only when you run `flouds-export` yourself. `flouds-onnx` ignores it; configure the store with `FloudsOnnxSettings`. |
 
 ## Local Store Layout
 
@@ -607,10 +632,10 @@ atomically, after the export has been checked.
 ```bash
 pip install -e ".[dev,export,seq2seq,server]"
 pre-commit install
-pytest tests/unit -v --cov=floudsonnx
+pytest tests/unit -v --cov=flouds_onnx
 ```
 
-Install in editable mode (`-e`) so that scripts and the `floudsonnx` command
+Install in editable mode (`-e`) so that scripts and the `flouds-onnx` command
 use your working copy. A plain `pip install .` leaves a snapshot in
 `site-packages` that silently goes stale.
 
@@ -621,8 +646,8 @@ black --check src tests
 isort --check-only src tests
 flake8 src tests
 bandit -r src -ll
-mypy src/floudsonnx
-pyright src/floudsonnx
+mypy src/flouds_onnx
+pyright src/flouds_onnx
 python -m build
 twine check dist/*
 ```

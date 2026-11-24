@@ -14,8 +14,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))  # noqa: E402
 
-from floudsonnx import FloudsOnnxClient, FloudsOnnxSettings  # noqa: E402
-from floudsonnx.config.model_config import ModelConfig  # noqa: E402
+from flouds_onnx import FloudsOnnxClient, FloudsOnnxSettings  # noqa: E402
+from flouds_onnx.config.model_config import ModelConfig  # noqa: E402
 
 MODEL = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 MODEL_FOR = "llm"

@@ -6,10 +6,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # =============================================================================
 """
-Quick manual smoke test for floudsonnx.
+Quick manual smoke test for flouds-onnx.
 
 Prerequisites:
-    pip install floudsonnx[export]
+    pip install flouds-onnx[export]
     do NOT install sentence-transformers — use library=transformers
 
 Usage:
@@ -33,7 +33,7 @@ def section(title: str) -> None:
 
 
 def run(args: argparse.Namespace) -> int:  # noqa: C901
-    from floudsonnx import FloudsOnnxClient, FloudsOnnxSettings
+    from flouds_onnx import FloudsOnnxClient, FloudsOnnxSettings
 
     settings = FloudsOnnxSettings(
         home_dir=args.home,
@@ -47,7 +47,7 @@ def run(args: argparse.Namespace) -> int:  # noqa: C901
     if library is None and model_for in ("fe", "sc", "ranker"):
         library = "transformers"
 
-    print("\nfloudsonnx manual test")
+    print("\nflouds-onnx manual test")
     print(f"  model               : {model_name}")
     print(f"  model_for           : {model_for}")
     print(f"  task                : {args.task or '(auto)'}")
@@ -192,7 +192,7 @@ def run(args: argparse.Namespace) -> int:  # noqa: C901
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="floudsonnx manual smoke test")
+    parser = argparse.ArgumentParser(description="flouds-onnx manual smoke test")
     parser.add_argument("--model", default="sentence-transformers/all-MiniLM-L6-v2")
     parser.add_argument("--for", dest="model_for", default="fe")
     parser.add_argument("--task", default="", help="Export task (default: auto from model_for)")

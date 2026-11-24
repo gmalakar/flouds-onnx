@@ -10,15 +10,15 @@ from unittest.mock import MagicMock
 
 import pytest
 
-import floudsonnx
-from floudsonnx.api.routers.health import store_status
-from floudsonnx.cli import main as cli
-from floudsonnx.exceptions import InvalidModelReferenceError
+import flouds_onnx
+from flouds_onnx.api.routers.health import store_status
+from flouds_onnx.cli import main as cli
+from flouds_onnx.exceptions import InvalidModelReferenceError
 
 
 def _run(monkeypatch, argv, client):
     monkeypatch.setattr(cli, "_client", lambda: client)
-    monkeypatch.setattr(sys, "argv", ["floudsonnx", *argv])
+    monkeypatch.setattr(sys, "argv", ["flouds-onnx", *argv])
     with pytest.raises(SystemExit) as exit_info:
         cli.main()
     return exit_info.value.code
@@ -27,7 +27,7 @@ def _run(monkeypatch, argv, client):
 class TestCli:
     def test_version_flag(self, monkeypatch, capsys):
         assert _run(monkeypatch, ["--version"], MagicMock()) == 0
-        assert floudsonnx.__version__ in capsys.readouterr().out
+        assert flouds_onnx.__version__ in capsys.readouterr().out
 
     def test_remove_succeeds_with_exit_code_0(self, monkeypatch):
         client = MagicMock()
@@ -88,20 +88,20 @@ class TestHealthRoutes:
         pytest.importorskip("httpx")
         from fastapi.testclient import TestClient
 
-        from floudsonnx.api import client as client_module
-        from floudsonnx.api.client import FloudsOnnxClient
-        from floudsonnx.api.server import create_app
+        from flouds_onnx.api import client as client_module
+        from flouds_onnx.api.client import FloudsOnnxClient
+        from flouds_onnx.api.server import create_app
 
         monkeypatch.setattr(client_module, "_default_client", FloudsOnnxClient(settings))
         return TestClient(create_app(api_token="token"))
 
     def test_health_and_readiness_need_no_token(self, settings, monkeypatch):
         http = self._http(settings, monkeypatch)
-        assert http.get("/health").json() == {"status": "ok", "service": "floudsonnx", "version": floudsonnx.__version__}
+        assert http.get("/health").json() == {"status": "ok", "service": "flouds-onnx", "version": flouds_onnx.__version__}
         assert http.get("/health/ready").json()["status"] == "ready"
 
     def test_readiness_is_503_when_the_store_is_unusable(self, tmp_path, monkeypatch):
-        from floudsonnx.config.settings import FloudsOnnxSettings
+        from flouds_onnx.config.settings import FloudsOnnxSettings
 
         blocked = tmp_path / "models"
         blocked.write_text("not a directory")

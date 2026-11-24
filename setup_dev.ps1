@@ -1,12 +1,12 @@
 # =============================================================================
-# setup_dev.ps1 — One-shot dev environment setup for floudsonnx
+# setup_dev.ps1 — One-shot dev environment setup for flouds-onnx
 # Run from the repo root: .\setup_dev.ps1
 # =============================================================================
 
 $ErrorActionPreference = "Stop"
 $Root = $PSScriptRoot
 
-Write-Host "`n=== floudsonnx dev setup ===" -ForegroundColor Cyan
+Write-Host "`n=== flouds-onnx dev setup ===" -ForegroundColor Cyan
 
 # 1. Create venv if missing
 if (-not (Test-Path "$Root\.venv")) {
@@ -29,7 +29,7 @@ python -m pip install --upgrade pip --quiet
 
 # 4. Install deps
 Write-Host "Installing dependencies..." -ForegroundColor Yellow
-# Editable, so scripts and the floudsonnx command use this working copy.
+# Editable, so scripts and the flouds-onnx command use this working copy.
 pip install -e "$Root[dev,export,seq2seq,server]" --quiet
 
 # 5. Install pre-commit hooks

@@ -9,7 +9,7 @@
 Integration test: full pull → load → run for a real FE model.
 
 Requires:
-  pip install floudsonnx[export]
+  pip install flouds-onnx[export]
   do NOT install sentence-transformers
 
 Run with:  pytest -m integration
@@ -22,7 +22,7 @@ pytestmark = pytest.mark.integration
 
 @pytest.fixture(scope="module")
 def fe_client(tmp_path_factory):
-    from floudsonnx import FloudsOnnxClient, FloudsOnnxSettings
+    from flouds_onnx import FloudsOnnxClient, FloudsOnnxSettings
 
     home = tmp_path_factory.mktemp("flouds_integration")
     return FloudsOnnxClient(FloudsOnnxSettings(home_dir=home))

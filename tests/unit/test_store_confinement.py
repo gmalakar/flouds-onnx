@@ -10,13 +10,13 @@ from pathlib import Path
 
 import pytest
 
-from floudsonnx.exceptions import FloudsOnnxError, InvalidModelReferenceError
-from floudsonnx.runtime.loader import ModelLoader
-from floudsonnx.runtime.session_pool import SessionPool
-from floudsonnx.runtime.tokenizer_cache import TokenizerCache
-from floudsonnx.store.manifest import ModelManifest
-from floudsonnx.store.registry import ModelRegistry
-from floudsonnx.utils.path_guard import safe_model_folder, safe_model_for
+from flouds_onnx.exceptions import FloudsOnnxError, InvalidModelReferenceError
+from flouds_onnx.runtime.loader import ModelLoader
+from flouds_onnx.runtime.session_pool import SessionPool
+from flouds_onnx.runtime.tokenizer_cache import TokenizerCache
+from flouds_onnx.store.manifest import ModelManifest
+from flouds_onnx.store.registry import ModelRegistry
+from flouds_onnx.utils.path_guard import safe_model_folder, safe_model_for
 
 BAD_NAMES = ["..", ".", "...", "org/..", "org/.", "../..", "", "   ", "/", "model.", "a/b/.."]
 BAD_TYPES = ["..", ".", "../..", "..\\..", "fe/..", "fe\\x", "/abs", "C:", "", " fe", "fe ", "a" * 33, "fe.d"]
@@ -84,8 +84,8 @@ class TestRegistryStaysInsideTheStore:
             getattr(registry, call)("some-model", "../..")
 
     def test_pull_refuses_before_exporting_or_deleting(self, settings, tmp_path, mocker):
-        export = mocker.patch("floudsonnx.store.registry.ExporterBridge.export")
-        rmtree = mocker.patch("floudsonnx.store.registry.shutil.rmtree")
+        export = mocker.patch("flouds_onnx.store.registry.ExporterBridge.export")
+        rmtree = mocker.patch("flouds_onnx.store.registry.shutil.rmtree")
         registry = ModelRegistry(settings)
         for name, model_for in (("..", "fe"), ("some-model", "../.."), ("some-model", "fe/../../x")):
             with pytest.raises(InvalidModelReferenceError):
@@ -148,9 +148,9 @@ class TestServerReportsBadReferencesAsBadRequests:
         pytest.importorskip("httpx")
         from fastapi.testclient import TestClient
 
-        from floudsonnx.api import client as client_module
-        from floudsonnx.api.client import FloudsOnnxClient
-        from floudsonnx.api.server import create_app
+        from flouds_onnx.api import client as client_module
+        from flouds_onnx.api.client import FloudsOnnxClient
+        from flouds_onnx.api.server import create_app
 
         kept = _store_model(settings, "fe", "model-a")
         monkeypatch.setattr(client_module, "_default_client", FloudsOnnxClient(settings))

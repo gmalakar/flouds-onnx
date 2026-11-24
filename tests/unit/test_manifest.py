@@ -4,9 +4,9 @@
 # =============================================================================
 import pytest
 
-from floudsonnx.config.model_config import ModelConfig
-from floudsonnx.exceptions import ManifestError
-from floudsonnx.store.manifest import ModelManifest
+from flouds_onnx.config.model_config import ModelConfig
+from flouds_onnx.exceptions import ManifestError
+from flouds_onnx.store.manifest import ModelManifest
 
 
 class TestModelManifest:

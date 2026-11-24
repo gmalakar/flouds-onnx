@@ -4,7 +4,7 @@
 # =============================================================================
 import threading
 
-from floudsonnx.utils.concurrent_dict import ConcurrentDict
+from flouds_onnx.utils.concurrent_dict import ConcurrentDict
 
 
 class TestConcurrentDict:

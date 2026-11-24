@@ -2,8 +2,8 @@
 # Copyright (c) 2026 Goutam Malakar. All rights reserved.
 # Licensed under the Apache License, Version 2.0.
 # =============================================================================
-from floudsonnx.config.model_config import ModelConfig
-from floudsonnx.runtime.strategy import SessionStrategy, resolve_strategy
+from flouds_onnx.config.model_config import ModelConfig
+from flouds_onnx.runtime.strategy import SessionStrategy, resolve_strategy
 
 
 def _cfg(**kw) -> ModelConfig:

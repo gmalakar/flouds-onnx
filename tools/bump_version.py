@@ -9,7 +9,7 @@
 # ==============================================================================
 # tools/bump_version.py
 # Usage: python tools/bump_version.py 0.2.0
-# Updates version in pyproject.toml and src/floudsonnx/__init__.py
+# Updates version in pyproject.toml and src/flouds_onnx/__init__.py
 # ==============================================================================
 import re
 import sys
@@ -35,7 +35,7 @@ def bump(new_version: str) -> None:
     print(f"  pyproject.toml   -> {new_version}")
 
     # __init__.py
-    init = ROOT / "src" / "floudsonnx" / "__init__.py"
+    init = ROOT / "src" / "flouds-onnx" / "__init__.py"
     text = init.read_text(encoding="utf-8")
     text, n = re.subn(r'(__version__\s*=\s*")[^"]+(")', rf"\g<1>{new_version}\2", text)
     if n == 0:
@@ -46,7 +46,7 @@ def bump(new_version: str) -> None:
 
     print(f"\nDone. Version bumped to {new_version}")
     print("Next steps:")
-    print("  git add pyproject.toml src/floudsonnx/__init__.py")
+    print("  git add pyproject.toml src/flouds_onnx/__init__.py")
     print(f"  git commit -m 'chore: bump version to {new_version}'")
     print(f"  git tag v{new_version}")
 

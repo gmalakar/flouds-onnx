@@ -1,9 +1,9 @@
-# floudsonnx: Production Readiness Audit
+# flouds-onnx: Production Readiness Audit
 
 Reviewed: 2026-11-21, at commit `753e3cb` (Version 1.0.0) plus the uncommitted changes in
 the working tree (`README.md`, `api/routers/models.py`, `tests/unit/test_api_models_router.py`).
 
-Scope: all 1,700 lines under `src/floudsonnx`, the tests, tooling, packaging and both
+Scope: all 1,700 lines under `src/flouds_onnx`, the tests, tooling, packaging and both
 GitHub workflows. Everything was read, not sampled.
 
 How to read the evidence. Findings marked **(verified)** were reproduced by running the
@@ -17,7 +17,7 @@ export were not run.
 
 ## 1. Executive Summary
 
-floudsonnx is a small, tidy library that does one thing: keep exported ONNX models in a
+flouds-onnx is a small, tidy library that does one thing: keep exported ONNX models in a
 local folder and hand back a loaded ONNX Runtime session. As an in-process library used
 by trusted code with trusted model names, it works and the design is sound. It is not
 safe to expose to input you do not control, and the optional HTTP server should not be
@@ -60,7 +60,7 @@ Evidence for the revised scores, all run locally on Windows:
 - The call sequence the `vectordb_interface` reranker makes was run against a real
   cross-encoder model and ranked the relevant passage first.
 - The wheel and source distribution build, pass `twine check`, and install into a clean
-  environment; the installed `floudsonnx` command works from outside the repository.
+  environment; the installed `flouds-onnx` command works from outside the repository.
 - The HTTP server was started from that installed wheel and exercised over real HTTP in
   local mode and token mode: access rules, origin and host checks, traversal attempts,
   rejected fields and error codes all behaved as documented.
@@ -526,7 +526,7 @@ Specific points:
 | `onnxruntime` | `>=1.20.1` | Medium: no upper bound on a library with behaviour changes between minors | Add a tested upper bound |
 | `transformers` | `>=4.44.0,<4.58.0` | Low: bounded, but the 5.x line is excluded and will need work | Track and test 5.x |
 | `pydantic` | `>=2.0` | Low | Fine |
-| `flouds-model-exporter` | `>=2.0.0,<3` (extra) | Low: the store root is passed as an argument, the exporter's own errors are translated, and the declared version is the one tested (unit and real-export tests against the 2.0.0 wheel) | Keep the upper bound until 3.0 is tested |
+| `flouds-model-exporter` | `>=2.0.1,<3` (extra) | Low: the store root is passed as an argument, the exporter's own errors are translated, and the declared version is the one tested (unit and real-export tests against 2.0.1 installed from PyPI) | Keep the upper bound until 3.0 is tested |
 | `optimum[onnxruntime]` | `>=1.22.0` (extra) | Medium: no upper bound, and the code patches a private attribute | Bound it and test the supported range |
 | `fastapi`, `uvicorn` | unbounded (extra) | Low | Add upper bounds |
 | Dev tools | exact pins from early 2024 (black 24.1.1, mypy 1.8.0, bandit 1.7.5) | Low: stale | Update on a schedule |

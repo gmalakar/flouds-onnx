@@ -4,11 +4,11 @@
 # =============================================================================
 from unittest.mock import MagicMock, patch
 
-from floudsonnx.api.client import FloudsOnnxClient, get_default_client
-from floudsonnx.config.model_config import ModelConfig
-from floudsonnx.runtime.loader import LoadedModel
-from floudsonnx.runtime.strategy import SessionStrategy
-from floudsonnx.store.manifest import ModelManifest
+from flouds_onnx.api.client import FloudsOnnxClient, get_default_client
+from flouds_onnx.config.model_config import ModelConfig
+from flouds_onnx.runtime.loader import LoadedModel
+from flouds_onnx.runtime.strategy import SessionStrategy
+from flouds_onnx.store.manifest import ModelManifest
 
 
 def _loaded(model_name="x", model_for="fe"):

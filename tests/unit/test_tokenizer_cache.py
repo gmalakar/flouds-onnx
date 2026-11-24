@@ -7,8 +7,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from floudsonnx.exceptions import TokenizerError
-from floudsonnx.runtime.tokenizer_cache import TokenizerCache
+from flouds_onnx.exceptions import TokenizerError
+from flouds_onnx.runtime.tokenizer_cache import TokenizerCache
 
 
 class TestTokenizerCache:

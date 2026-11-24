@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))  # noqa: E402
 
 import numpy as np  # noqa: E402
 
-from floudsonnx import FloudsOnnxClient, FloudsOnnxSettings  # noqa: E402
+from flouds_onnx import FloudsOnnxClient, FloudsOnnxSettings  # noqa: E402
 
 MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 MODEL_FOR = "fe"

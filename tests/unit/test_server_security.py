@@ -16,11 +16,11 @@ pytest.importorskip("httpx")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from floudsonnx.api import client as client_module  # noqa: E402
-from floudsonnx.api import security  # noqa: E402
-from floudsonnx.api.routers import models as models_router  # noqa: E402
-from floudsonnx.api.server import create_app, run_server  # noqa: E402
-from floudsonnx.exceptions import ExportError, ModelLoadError, ModelNotFoundError, ServerConfigurationError  # noqa: E402
+from flouds_onnx.api import client as client_module  # noqa: E402
+from flouds_onnx.api import security  # noqa: E402
+from flouds_onnx.api.routers import models as models_router  # noqa: E402
+from flouds_onnx.api.server import create_app, run_server  # noqa: E402
+from flouds_onnx.exceptions import ExportError, ModelLoadError, ModelNotFoundError, ServerConfigurationError  # noqa: E402
 
 TOKEN = "unit-test-token"
 PROTECTED = [

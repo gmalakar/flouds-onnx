@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "floudsonnx"
+name = "flouds-onnx"
 version = "2.0.0"
 description = "Ollama-style ONNX model store and runtime - pull, cache, and serve ORT sessions"
 readme = { file = "README.md", content-type = "text/markdown" }
@@ -38,8 +38,8 @@ dependencies = [
 
 [project.optional-dependencies]
 # 2.0.0 is the first release that never enables trust_remote_code by itself and does
-# not save the Hugging Face token; floudsonnx relies on both.
-export = ["flouds-model-exporter>=2.0.0,<3"]
+# not save the Hugging Face token; flouds-onnx relies on both.
+export = ["flouds-model-exporter>=2.0.1,<3"]
 seq2seq = ["optimum[onnxruntime]>=1.22.0"]
 server = ["fastapi>=0.110.0,<1.0", "uvicorn[standard]>=0.29.0,<1.0"]
 dev = [
@@ -58,18 +58,18 @@ dev = [
     "bandit==1.7.5",
     "pbr",
 ]
-all = ["floudsonnx[export,seq2seq,server]"]
+all = ["flouds-onnx[export,seq2seq,server]"]
 
 [project.urls]
-Repository = "https://github.com/gmalakar/floudsonnx"
-Issues = "https://github.com/gmalakar/floudsonnx/issues"
+Repository = "https://github.com/gmalakar/flouds-onnx"
+Issues = "https://github.com/gmalakar/flouds-onnx/issues"
 
 [project.scripts]
-floudsonnx = "floudsonnx.cli.main:main"
+flouds-onnx = "flouds_onnx.cli.main:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["floudsonnx*"]
+include = ["flouds_onnx*"]
 exclude = ["tests*", "tools*"]
 
 [tool.setuptools]
@@ -85,7 +85,7 @@ markers = [
 ]
 filterwarnings = [
     # Suppress all third-party deprecation / user / future warnings
-    # that are not actionable from floudsonnx itself.
+    # that are not actionable from flouds-onnx itself.
     "ignore::DeprecationWarning",
     "ignore::FutureWarning",
     # Suppress torch TracerWarning (subclass of UserWarning) from transformers/torch
@@ -116,13 +116,13 @@ warn_unused_ignores = true
 disallow_incomplete_defs = true
 
 [tool.pyright]
-include = ["src/floudsonnx"]
+include = ["src/flouds_onnx"]
 exclude = [
     "**/__pycache__",
     ".venv",
     "build",
     "dist",
-    "src/floudsonnx.egg-info",
+    "src/flouds_onnx.egg-info",
 ]
 pythonVersion = "3.11"
 venvPath = "."
