@@ -1,7 +1,7 @@
 # flouds-onnx
 
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](https://www.python.org/)
-[![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](https://github.com/gmalakar/flouds-onnx/blob/main/LICENSE)
 
 `flouds-onnx` is a small ONNX model store and runtime for Python. It can pull
 Hugging Face models into a local ONNX store, cache runtime sessions, and load
@@ -658,14 +658,14 @@ Integration tests download and export real models:
 pytest tests/integration -m integration -v
 ```
 
-Runnable examples are in [`examples/`](examples/), and manual smoke scripts for
-all model types are in [`scripts/`](scripts/).
+Runnable examples are in [`examples/`](https://github.com/gmalakar/flouds-onnx/tree/main/examples), and manual smoke scripts for
+all model types are in [`scripts/`](https://github.com/gmalakar/flouds-onnx/tree/main/scripts).
 
 ## Release
 
 Releases are tag-driven through GitHub Actions. See
-[`docs/RELEASE_PROCESS.md`](docs/RELEASE_PROCESS.md).
+[`docs/RELEASE_PROCESS.md`](https://github.com/gmalakar/flouds-onnx/blob/main/docs/RELEASE_PROCESS.md).
 
 ## License
 
-Apache-2.0. See [`LICENSE`](LICENSE).
+Apache-2.0. See [`LICENSE`](https://github.com/gmalakar/flouds-onnx/blob/main/LICENSE).
