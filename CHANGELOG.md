@@ -7,7 +7,7 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [2.0.0] - Unreleased
+## [2.0.0] - 2026-11-24
 
 ### Renamed
 
