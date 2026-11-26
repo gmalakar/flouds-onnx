@@ -38,10 +38,11 @@ from flouds_onnx.exceptions import TokenizerError
 log = logging.getLogger(__name__)
 
 # Models whose exported tokenizer files are known not to load; used only when the Hub
-# fallback is explicitly enabled.
-_HF_FALLBACKS: Dict[str, str] = {
-    "all-MiniLM-L6-v2": "sentence-transformers/all-MiniLM-L6-v2",
-    "sentence-t5-base": "sentence-transformers/sentence-t5-base",
+# fallback is explicitly enabled. Each maps to (repository, commit): the download is
+# pinned to that commit, so a later push to the repository cannot change what loads.
+_HF_FALLBACKS: Dict[str, Tuple[str, str]] = {
+    "all-MiniLM-L6-v2": ("sentence-transformers/all-MiniLM-L6-v2", "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"),
+    "sentence-t5-base": ("sentence-transformers/sentence-t5-base", "fc5d4628481afbbaaacd7af6bb07cf9d3865f781"),
 }
 
 
@@ -137,13 +138,15 @@ class TokenizerCache:
         # load that quietly reaches the network is a surprise in an offline deployment,
         # and what it fetches is whatever the repository holds that day.
         folder_name = os.path.basename(os.path.normpath(model_dir))
-        hf_name = _HF_FALLBACKS.get(folder_name)
+        hf_name, hf_revision = _HF_FALLBACKS.get(folder_name, (None, None))
         if hf_name and allow_hub_fallback:
             try:
-                log.warning("TokenizerCache: local tokenizer unusable; downloading '%s' from the Hugging Face Hub", hf_name)
-                # nosec B615: opt-in fallback (allow_hub_fallback) to a fixed list of repositories;
-                # pinning their revisions is an open item.
-                return AutoTokenizer.from_pretrained(hf_name, use_fast=False)  # nosec B615
+                log.warning(
+                    "TokenizerCache: local tokenizer unusable; downloading '%s' (revision %s) from the Hugging Face Hub",
+                    hf_name,
+                    hf_revision,
+                )
+                return AutoTokenizer.from_pretrained(hf_name, revision=hf_revision, use_fast=False)
             except Exception as e3:
                 errors.append(f"hub: {type(e3).__name__}: {e3}")
                 log.error("TokenizerCache: HF Hub fallback failed for '%s': %s", hf_name, e3)

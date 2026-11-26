@@ -7,6 +7,10 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- The opt-in Hugging Face Hub tokenizer fallback (`allow_hub_tokenizer_fallback`) downloads each repository at a pinned commit, so a later push to `sentence-transformers/all-MiniLM-L6-v2` or `sentence-transformers/sentence-t5-base` cannot change what is loaded. Its bandit B615 exemption is removed.
+
 ## [2.0.1] - 2026-11-26
 
 ### Changed

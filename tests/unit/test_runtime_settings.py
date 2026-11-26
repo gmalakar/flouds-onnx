@@ -180,10 +180,18 @@ class TestTokenizerCache:
             if kwargs.get("local_files_only"):
                 raise OSError("no tokenizer files")
             assert name == "sentence-transformers/all-MiniLM-L6-v2"
+            assert kwargs.get("revision") == "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
             return hub_tokenizer
 
         with patch("transformers.AutoTokenizer.from_pretrained", side_effect=from_pretrained):
             assert TokenizerCache(allow_hub_fallback=True).get_or_load(str(model_dir)) is hub_tokenizer
+
+    def test_every_fallback_is_pinned_to_a_commit(self):
+        from flouds_onnx.runtime.tokenizer_cache import _HF_FALLBACKS
+
+        for repo, revision in _HF_FALLBACKS.values():
+            assert "/" in repo
+            assert len(revision) == 40 and all(c in "0123456789abcdef" for c in revision)
 
     def test_failure_reports_why_each_attempt_failed(self, tmp_path):
         with patch("transformers.AutoTokenizer.from_pretrained", side_effect=PermissionError("access denied")):
