@@ -10,6 +10,8 @@ and this project uses [Semantic Versioning](https://semver.org/).
 ### Security
 
 - The opt-in Hugging Face Hub tokenizer fallback (`allow_hub_tokenizer_fallback`) downloads each repository at a pinned commit, so a later push to `sentence-transformers/all-MiniLM-L6-v2` or `sentence-transformers/sentence-t5-base` cannot change what is loaded. Its bandit B615 exemption is removed.
+- transformers 5 is supported: `transformers>=4.44.0,<6` (was `<4.58.0`). A base or `[server]` install now gets transformers 5, which fixes the advisories pip-audit reports for transformers 4.57.6 (PYSEC-2025-217, PYSEC-2026-2288, -2289, -2290, -3929 and -4174). Tested with transformers 5.24.1 on Python 3.14 and 3.11. Token IDs and ONNX outputs for all-MiniLM-L6-v2, ms-marco-MiniLM-L-6-v2 and t5-small match transformers 4.57.6.
+- The `export` and `seq2seq` extras still install transformers 4.57.6. They depend on optimum-onnx, whose latest release (0.1.0) requires `transformers<4.58.0`, so they still carry those advisories.
 
 ## [2.0.1] - 2026-11-26
 
