@@ -7,6 +7,23 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-11-26
+
+### Changed
+
+- Python 3.11, 3.12, 3.13 and 3.14 are supported (`requires-python = ">=3.11,<3.15"`). Development, CI checks that run once and the Flouds services use 3.14.
+- NumPy 2 is supported: `numpy>=1.26.4,<3` (was `<1.27`). Tested with NumPy 2.5.5 on Python 3.14 and 2.4.6 on Python 3.11.
+- Development tools: black 25.12.0, isort 6.1.0, flake8 7.5.0, mypy 1.20.2, bandit 1.9.4, pre-commit 4.7.0, pre-commit-hooks 6.0.0.
+
+### Fixed
+
+- `FloudsOnnxError` and its subclasses keep `detail` and their attributes through `pickle` and `copy` (the keyword-only `detail` was lost).
+- The local pre-commit hooks start under any `python` on PATH (`python -E`; pyright runs through `tools/run_in_venv.py`), and the pre-push check waits for the checks on Windows.
+
+### Requires
+
+- The `export` extra requires `flouds-model-exporter>=2.0.2,<3`: 2.0.2 patches optimum-onnx for Python 3.14 (`functools.partial` binding), which seq2seq export needs, and supports Python 3.11 to 3.14.
+
 ## [2.0.0] - 2026-11-24
 
 ### Renamed

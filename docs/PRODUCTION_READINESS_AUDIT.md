@@ -101,8 +101,8 @@ Still open, and why the scores are not higher:
   stops at a raw session (A6).
 - **Server:** no rate or size limits, no request logging or metrics, no TLS. A caller
   with the token can still fill the disk or memory.
-- **`numpy<1.27`** still forces NumPy 1.x on consumers (section 10). Not changed,
-  because widening it needs a test run against NumPy 2 that was not done.
+- ~~**`numpy<1.27`** forces NumPy 1.x on consumers~~ - fixed 2026-11-26: `numpy>=1.26.4,<3`,
+  tested with NumPy 2.5.5 (Python 3.14) and 2.4.6 (Python 3.11).
 - **The per-model lock tables only grow** (A5). Negligible unless model names are
   unbounded.
 
@@ -434,9 +434,7 @@ In priority order.
 There is no Dockerfile, and for a library that is the right choice. Two notes for
 consumers that build this into an image:
 
-- The `numpy>=1.26.4,<1.27` pin forces NumPy 1.x on everything installed alongside it.
-  This already caused a build failure in `vectordb_interface`, where the lock file had
-  resolved NumPy 2.x. See section 10.
+- NumPy is no longer capped at 1.x (`>=1.26.4,<3` since 2026-11-26).
 - The `export` extra pulls PyTorch, Optimum and the exporter. Images that only load
   pre-exported models should install the base package and mount the store read-only,
   which currently fails on first access because of Q5.
@@ -447,7 +445,7 @@ consumers that build this into an image:
 
 ### What is there
 
-- `ci.yml`: Ubuntu and Windows, Python 3.11 and 3.12; black, isort, flake8, mypy,
+- `ci.yml`: Ubuntu and Windows, Python 3.11, 3.12, 3.13 and 3.14; black, isort, flake8, mypy,
   pyright, a dependency-sync check, unit tests. Integration tests run on pushes to
   `main`.
 - `release.yml`: checks the tag is semver and matches both version declarations, builds
@@ -522,14 +520,14 @@ Specific points:
 
 | Dependency | Declared | Risk | Recommendation |
 |---|---|---|---|
-| `numpy` | `>=1.26.4,<1.27` | High: forces NumPy 1.x on every consumer; conflicts with anything resolved to 2.x | Test against NumPy 2 and widen to `<3`, or document why 1.26 is required |
+| `numpy` | `>=1.26.4,<3` | Low: tested with NumPy 2.5.5 (3.14) and 2.4.6 (3.11) | Fine |
 | `onnxruntime` | `>=1.20.1` | Medium: no upper bound on a library with behaviour changes between minors | Add a tested upper bound |
 | `transformers` | `>=4.44.0,<4.58.0` | Low: bounded, but the 5.x line is excluded and will need work | Track and test 5.x |
 | `pydantic` | `>=2.0` | Low | Fine |
-| `flouds-model-exporter` | `>=2.0.1,<3` (extra) | Low: the store root is passed as an argument, the exporter's own errors are translated, and the declared version is the one tested (unit and real-export tests against 2.0.1 installed from PyPI) | Keep the upper bound until 3.0 is tested |
+| `flouds-model-exporter` | `>=2.0.2,<3` (extra) | Low: the store root is passed as an argument, the exporter's own errors are translated, and 2.0.2 carries the Python 3.14 optimum fix seq2seq export needs (tested against the local 2.0.2 checkout on Python 3.14 and 3.11 before its release) | Keep the upper bound until 3.0 is tested |
 | `optimum[onnxruntime]` | `>=1.22.0` (extra) | Medium: no upper bound, and the code patches a private attribute | Bound it and test the supported range |
 | `fastapi`, `uvicorn` | unbounded (extra) | Low | Add upper bounds |
-| Dev tools | exact pins from early 2024 (black 24.1.1, mypy 1.8.0, bandit 1.7.5) | Low: stale | Update on a schedule |
+| Dev tools | exact pins (black 25.12.0, isort 6.1.0, flake8 7.5.0, mypy 1.20.2, bandit 1.9.4), updated 2026-11-26 for Python 3.14 | Low | Update on a schedule |
 
 Other observations:
 
@@ -537,7 +535,8 @@ Other observations:
   One source would remove the need for the check.
 - There is no lock file for development, so CI installs whatever is current. A break in
   a transitive dependency will look like a break in this project.
-- `requires-python = ">=3.11,<3.13"` excludes 3.13. Fine for now; decide when to add it.
+- `requires-python = ">=3.11,<3.15"` (2026-11-26): 3.11 to 3.14, tested on 3.11 and 3.14 locally and
+  on all four in CI. Development and the Flouds services use 3.14 (the platform standard).
 
 ---
 

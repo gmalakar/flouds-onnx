@@ -9,12 +9,25 @@ Full exception hierarchy. All public exceptions importable from the package root
 """
 
 
+def _restore_error(cls: "type[FloudsOnnxError]", args: tuple, state: dict) -> "FloudsOnnxError":
+    """Rebuild a pickled or copied error without calling its ``__init__``."""
+    error = cls.__new__(cls)
+    error.args = args
+    error.__dict__.update(state)
+    return error
+
+
 class FloudsOnnxError(Exception):
     """Base exception for all flouds-onnx errors."""
 
-    def __init__(self, message: str, *, detail: str | None = None):
+    def __init__(self, message: str, *, detail: str | None = None):  # noqa: B042 - __reduce__ keeps pickle/copy right
         super().__init__(message)
         self.detail = detail
+
+    def __reduce__(self) -> tuple:
+        # The keyword-only ``detail`` is not in ``self.args`` and subclasses have other
+        # signatures, so restore the arguments and attributes instead of calling __init__.
+        return (_restore_error, (type(self), self.args, dict(self.__dict__)))
 
     def __str__(self) -> str:
         if self.detail:

@@ -114,7 +114,9 @@ class TokenizerCache:
         # Attempt 1: local, requested mode
         try:
             log.debug("TokenizerCache: loading from '%s' (legacy=%s)", model_dir, use_legacy)
-            tok = AutoTokenizer.from_pretrained(model_dir, local_files_only=True, use_fast=not use_legacy)
+            tok = AutoTokenizer.from_pretrained(
+                model_dir, local_files_only=True, use_fast=not use_legacy
+            )  # nosec B615 - local files only, no download
             log.info("TokenizerCache: ready — %s", os.path.basename(model_dir))
             return tok
         except Exception as e1:
@@ -124,7 +126,7 @@ class TokenizerCache:
         # Attempt 2: legacy fallback
         if not use_legacy:
             try:
-                tok = AutoTokenizer.from_pretrained(model_dir, local_files_only=True, use_fast=False)
+                tok = AutoTokenizer.from_pretrained(model_dir, local_files_only=True, use_fast=False)  # nosec B615 - local files only, no download
                 log.info("TokenizerCache: ready (legacy) — %s", os.path.basename(model_dir))
                 return tok
             except Exception as e2:
@@ -139,7 +141,9 @@ class TokenizerCache:
         if hf_name and allow_hub_fallback:
             try:
                 log.warning("TokenizerCache: local tokenizer unusable; downloading '%s' from the Hugging Face Hub", hf_name)
-                return AutoTokenizer.from_pretrained(hf_name, use_fast=False)
+                # nosec B615: opt-in fallback (allow_hub_fallback) to a fixed list of repositories;
+                # pinning their revisions is an open item.
+                return AutoTokenizer.from_pretrained(hf_name, use_fast=False)  # nosec B615
             except Exception as e3:
                 errors.append(f"hub: {type(e3).__name__}: {e3}")
                 log.error("TokenizerCache: HF Hub fallback failed for '%s': %s", hf_name, e3)

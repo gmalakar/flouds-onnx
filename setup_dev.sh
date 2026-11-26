@@ -13,7 +13,7 @@ echo "=== flouds-onnx dev setup ==="
 # 1. Create venv if missing
 if [ ! -d "$ROOT/.venv" ]; then
     echo "Creating virtual environment..."
-    python3 -m venv "$ROOT/.venv"
+    "${PYTHON:-python3.14}" -m venv "$ROOT/.venv"  # Flouds standard: Python 3.14
 fi
 
 # 2. Activate

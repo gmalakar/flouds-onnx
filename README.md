@@ -1,6 +1,6 @@
 # flouds-onnx
 
-[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/python-3.11%20%E2%80%93%203.14-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](https://github.com/gmalakar/flouds-onnx/blob/main/LICENSE)
 
 `flouds-onnx` is a small ONNX model store and runtime for Python. It can pull
@@ -87,7 +87,7 @@ The 2.0.0 release has further breaking changes; see `CHANGELOG.md`.
 
 ## Installation
 
-`flouds-onnx` supports Python `3.11` and `3.12`.
+`flouds-onnx` supports Python `3.11` to `3.14`; development and the Flouds services use `3.14`.
 
 ```bash
 pip install flouds-onnx
@@ -112,7 +112,7 @@ Core dependencies:
 
 Optional extras:
 
-- `export`: `flouds-model-exporter>=2.0.1,<3`
+- `export`: `flouds-model-exporter>=2.0.2,<3`
 - `seq2seq`: `optimum[onnxruntime]`
 - `server`: `fastapi`, `uvicorn[standard]`
 
