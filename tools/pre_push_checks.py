@@ -27,11 +27,23 @@ def _venv_python(root: Path) -> Path:
 
 
 def _reexec_with_venv_python() -> None:
+    """Run this script again with the repository's virtualenv Python.
+
+    The hook starts with whatever ``python`` is on PATH (``-E`` in the hook
+    entry keeps an inherited PYTHONHOME from a different version from crashing
+    it). A child process, not ``os.execv``: on Windows ``execv`` starts a new
+    process and ends this one at once, so pre-commit would read exit code 0
+    before the checks finish. The child gets the environment without
+    PYTHONHOME; the virtualenv launcher sets its own.
+    """
     root = _repo_root()
     venv_python = _venv_python(root)
     current_python = Path(sys.executable).resolve()
     if venv_python.exists() and current_python != venv_python.resolve():
-        os.execv(str(venv_python), [str(venv_python), *sys.argv])
+        env = {key: value for key, value in os.environ.items() if key != "PYTHONHOME"}
+        script = str(Path(__file__).resolve())
+        completed = subprocess.run([str(venv_python), script, *sys.argv[1:]], env=env, check=False)
+        sys.exit(completed.returncode)
 
 
 _reexec_with_venv_python()

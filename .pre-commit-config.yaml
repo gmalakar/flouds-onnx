@@ -65,14 +65,14 @@ repos:
     hooks:
       - id: add-header
         name: Add copyright header
-        entry: python tools/add_all_headers.py
+        entry: python -E tools/add_all_headers.py
         language: system
         files: \.py$
 
       # ⭐ Pyright tuned for harmony
       - id: pyright
         name: pyright type check
-        entry: python -m pyright
+        entry: python -E tools/run_in_venv.py -m pyright
         language: system
         pass_filenames: false
         types_or: [python, pyi]
@@ -81,7 +81,11 @@ repos:
 
       - id: pre-push-tests
         name: Run unit tests before push
-        entry: python tools/pre_push_checks.py
+        # -E: ignore PYTHON* variables inherited from the Python that runs
+        # pre-commit (a uv venv launcher exports PYTHONHOME); otherwise a
+        # different-version `python` on PATH crashes before the script can
+        # switch to the repository's .venv.
+        entry: python -E tools/pre_push_checks.py
         language: system
         pass_filenames: false
         stages: [pre-push]
