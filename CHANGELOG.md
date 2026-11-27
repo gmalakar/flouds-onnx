@@ -7,6 +7,10 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- `tools/bump_version.py` updates `src/flouds_onnx/__init__.py`; it looked for `src/flouds-onnx/__init__.py` and stopped after changing `pyproject.toml`. It also keeps each file's line endings; on Windows it used to rewrite both files with CRLF.
+
 ## [2.1.0] - 2026-11-26
 
 ### Security

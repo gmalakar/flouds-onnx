@@ -26,22 +26,22 @@ def bump(new_version: str) -> None:
 
     # pyproject.toml
     pyproject = ROOT / "pyproject.toml"
-    text = pyproject.read_text(encoding="utf-8")
+    text = pyproject.read_bytes().decode("utf-8")  # bytes: keep the file's line endings
     text, n = re.subn(r'(^version\s*=\s*")[^"]+(")', rf"\g<1>{new_version}\2", text, flags=re.MULTILINE)
     if n == 0:
         print("ERROR: version field not found in pyproject.toml")
         sys.exit(1)
-    pyproject.write_text(text, encoding="utf-8")
+    pyproject.write_bytes(text.encode("utf-8"))
     print(f"  pyproject.toml   -> {new_version}")
 
     # __init__.py
-    init = ROOT / "src" / "flouds-onnx" / "__init__.py"
-    text = init.read_text(encoding="utf-8")
+    init = ROOT / "src" / "flouds_onnx" / "__init__.py"
+    text = init.read_bytes().decode("utf-8")  # bytes: keep the file's line endings
     text, n = re.subn(r'(__version__\s*=\s*")[^"]+(")', rf"\g<1>{new_version}\2", text)
     if n == 0:
         print("ERROR: __version__ not found in __init__.py")
         sys.exit(1)
-    init.write_text(text, encoding="utf-8")
+    init.write_bytes(text.encode("utf-8"))
     print(f"  __init__.py      -> {new_version}")
 
     print(f"\nDone. Version bumped to {new_version}")
