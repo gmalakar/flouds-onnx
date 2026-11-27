@@ -7,6 +7,16 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-11-27
+
+### Added
+
+- `allow_export` setting (`FLOUDS_ONNX_ALLOW_EXPORT`, default `true`). With `false`, a model that is not in the store is never exported: `pull()`, `create_model()`, the CLI and the server raise the new `ExportDisabledError` (HTTP 403) before anything on disk is created or removed, and `force=True` does not delete the stored model. Models already in the store load as before. Services that must only run models exported elsewhere (in the Flouds platform: everything except flouds-models) set it to `false`.
+
+### Changed
+
+- `ExporterNotInstalledError` now says that export is enabled and how to install `flouds-onnx[export]`, or to set `FLOUDS_ONNX_ALLOW_EXPORT=false`.
+
 ### Fixed
 
 - `tools/bump_version.py` updates `src/flouds_onnx/__init__.py`; it looked for `src/flouds-onnx/__init__.py` and stopped after changing `pyproject.toml`. It also keeps each file's line endings; on Windows it used to rewrite both files with CRLF.

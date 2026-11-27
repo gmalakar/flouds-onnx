@@ -20,6 +20,7 @@ from flouds_onnx.config.export_options import ExportOptions
 from flouds_onnx.config.model_config import ModelConfig
 from flouds_onnx.config.settings import FloudsOnnxSettings
 from flouds_onnx.exceptions import (
+    ExportDisabledError,
     ExporterNotInstalledError,
     ExportError,
     ExportInProgressError,
@@ -39,7 +40,7 @@ from flouds_onnx.runtime.loader import LoadedModel
 from flouds_onnx.runtime.strategy import SessionStrategy
 from flouds_onnx.store.manifest import ModelManifest
 
-__version__ = "2.1.0"
+__version__ = "2.2.0"
 __all__ = [
     # Primary API
     "create_model",
@@ -64,6 +65,7 @@ __all__ = [
     "ModelLoadError",
     "TokenizerError",
     "ExportError",
+    "ExportDisabledError",
     "ExporterNotInstalledError",
     "ExportInProgressError",
     "RemoteCodeRequiredError",

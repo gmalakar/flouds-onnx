@@ -32,6 +32,18 @@ Hugging Face models to ONNX. Without it, `flouds-onnx` can still load models
 that already exist in the local ONNX store, but it cannot pull/export new
 Hugging Face models.
 
+Export is controlled by the `allow_export` setting (`FLOUDS_ONNX_ALLOW_EXPORT`,
+default `true`):
+
+| `allow_export` | Model already in the store | Model missing from the store |
+|---|---|---|
+| `false` | loads | `ExportDisabledError`; nothing is exported, created or removed (HTTP 403 from the server) |
+| `true`, `export` extra installed | loads | exported, then loads |
+| `true`, extra not installed | loads | `ExporterNotInstalledError` saying to install `flouds-onnx[export]` (HTTP 501) |
+
+Set `FLOUDS_ONNX_ALLOW_EXPORT=false` in services that must only run models
+exported elsewhere.
+
 For private or gated Hugging Face models, provide a token with the standard
 Hugging Face Hub variable:
 
@@ -568,6 +580,7 @@ client = FloudsOnnxClient(
 | `seq2seq_cache_max` | `3` | `FLOUDS_ONNX_SEQ2SEQ_CACHE_MAX` | Seq2seq models kept in memory. |
 | `tokenizer_cache_max` | `16` | `FLOUDS_ONNX_TOKENIZER_CACHE_MAX` | Tokenizers kept per thread. |
 | `allow_hub_tokenizer_fallback` | `False` | `FLOUDS_ONNX_ALLOW_HUB_TOKENIZER_FALLBACK` | Let a failed local tokenizer load download a known replacement from the Hugging Face Hub. |
+| `allow_export` | `True` | `FLOUDS_ONNX_ALLOW_EXPORT` | Let `pull()`, `create_model()`, the CLI and the server export a model that is not in the store. Off: `ExportDisabledError`. On without the `export` extra: `ExporterNotInstalledError`. |
 
 The environment variables are read by `FloudsOnnxSettings.from_env()`. The
 top-level helpers (`create_model()`, `pull()`, ...), the CLI and the HTTP server

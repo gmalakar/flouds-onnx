@@ -31,6 +31,7 @@ ENV_FIELDS: dict[str, str] = {
     "FLOUDS_ONNX_SEQ2SEQ_CACHE_MAX": "seq2seq_cache_max",
     "FLOUDS_ONNX_TOKENIZER_CACHE_MAX": "tokenizer_cache_max",
     "FLOUDS_ONNX_ALLOW_HUB_TOKENIZER_FALLBACK": "allow_hub_tokenizer_fallback",
+    "FLOUDS_ONNX_ALLOW_EXPORT": "allow_export",
 }
 
 
@@ -62,6 +63,14 @@ class FloudsOnnxSettings(BaseModel):
     # Tokenizers are loaded from the model directory only. Enabling this lets a failed
     # local load download a known replacement from the Hugging Face Hub instead.
     allow_hub_tokenizer_fallback: bool = False
+
+    # ── Export ───────────────────────────────────────────────────────────────
+    # Whether a model missing from the store may be exported (pull, create_model,
+    # the CLI and the server). Off: such a request fails with ExportDisabledError and
+    # nothing is exported. On: export needs the ``export`` extra
+    # (flouds-model-exporter), otherwise ExporterNotInstalledError says how to install
+    # it. Models already in the store load either way.
+    allow_export: bool = True
 
     @field_validator("encoder_cache_max", "seq2seq_cache_max", "tokenizer_cache_max")
     @classmethod

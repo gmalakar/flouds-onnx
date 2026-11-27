@@ -19,6 +19,7 @@ try:
     from flouds_onnx.api.client import get_default_client
     from flouds_onnx.config.export_options import ExportOptions, SafeExportOptions
     from flouds_onnx.exceptions import (
+        ExportDisabledError,
         ExporterNotInstalledError,
         ExportInProgressError,
         FloudsOnnxError,
@@ -49,6 +50,9 @@ try:
                 status_code=422,
                 detail=f"{exc.args[0]}. The server never enables it; pull this model with the Python API or the CLI.",
             )
+        if isinstance(exc, ExportDisabledError):
+            # Export is switched off on this server: the model has to be put in the store.
+            return HTTPException(status_code=403, detail=exc.args[0] if exc.args else "Export is disabled")
         if isinstance(exc, (ExportInProgressError, ModelNameConflictError, RevisionMismatchError)):
             return HTTPException(status_code=409, detail=str(exc))
         if isinstance(exc, (ExporterNotInstalledError, OptimumNotInstalledError)):

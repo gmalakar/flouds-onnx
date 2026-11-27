@@ -79,10 +79,18 @@ class ExportInProgressError(ExportError):
 
 
 class ExporterNotInstalledError(ExportError):
-    """flouds-model-exporter is not installed."""
+    """Export is allowed, but flouds-model-exporter is not installed."""
 
     def __init__(self) -> None:
-        super().__init__("flouds-model-exporter is required for auto-export. " "Install it with: pip install flouds-onnx[export]")
+        super().__init__(
+            "Export is enabled (allow_export / FLOUDS_ONNX_ALLOW_EXPORT) but flouds-model-exporter is not installed. "
+            'Install it with: pip install "flouds-onnx[export]", or set FLOUDS_ONNX_ALLOW_EXPORT=false '
+            "to load only models that are already in the store."
+        )
+
+
+class ExportDisabledError(ExportError):
+    """The model is not in the store and export is switched off (``allow_export=False``)."""
 
 
 # ── Runtime layer ─────────────────────────────────────────────────────────────

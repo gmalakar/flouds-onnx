@@ -14,7 +14,14 @@ from typing import Any, List, Optional
 from flouds_onnx.config.export_options import ExportOptions
 from flouds_onnx.config.model_config import ModelConfig
 from flouds_onnx.config.settings import MODEL_FOR_DEFAULT_TASKS, FloudsOnnxSettings
-from flouds_onnx.exceptions import ExportError, InvalidModelReferenceError, ManifestError, ModelNameConflictError, RevisionMismatchError
+from flouds_onnx.exceptions import (
+    ExportDisabledError,
+    ExportError,
+    InvalidModelReferenceError,
+    ManifestError,
+    ModelNameConflictError,
+    RevisionMismatchError,
+)
 from flouds_onnx.store.exporter_bridge import ExporterBridge
 from flouds_onnx.store.manifest import ExportOptions as ManifestExportOptions
 from flouds_onnx.store.manifest import ModelManifest
@@ -69,8 +76,13 @@ class ModelRegistry:
                         log.debug("pull: '%s' already on disk; skipping export", key)
                         return manifest
                 else:
+                    self._require_export_allowed(model_name, model_for)
                     log.info("pull: force=True; removing '%s' before re-export", key)
                     shutil.rmtree(str(model_dir), ignore_errors=True)
+
+            # Checked before anything on disk changes: with export off a missing model is
+            # an error and nothing is created or removed.
+            self._require_export_allowed(model_name, model_for)
 
             os.makedirs(str(model_dir), exist_ok=True)
             log.info(
@@ -102,6 +114,15 @@ class ModelRegistry:
             manifest.save(str(model_dir))
             log.info("pull: manifest written for '%s'", key)
             return manifest
+
+    def _require_export_allowed(self, model_name: str, model_for: str) -> None:
+        """Raise ExportDisabledError when export is switched off."""
+        if not self._settings.allow_export:
+            raise ExportDisabledError(
+                f"Model '{model_name}' (model_for={model_for}) must be exported, but export is disabled "
+                "(allow_export=False / FLOUDS_ONNX_ALLOW_EXPORT=false). Put the exported model in the store, "
+                "or enable export and install flouds-onnx[export]."
+            )
 
     def list(self) -> List[ModelManifest]:
         manifests: List[ModelManifest] = []
